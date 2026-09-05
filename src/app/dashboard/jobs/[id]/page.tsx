@@ -256,6 +256,7 @@ export default function JobDetailPage() {
             onApprove={() => setShowApproval(true)}
             onEditQuote={() => setShowQuoteEditor(true)}
             savedTotal={savedQuoteTotal}
+            line_items={realJob?.quote?.line_items}
           />
         )}
         {activeTab === 'activity' && (
@@ -327,6 +328,7 @@ export default function JobDetailPage() {
               onApprove={() => setShowApproval(true)}
               onEditQuote={() => setShowQuoteEditor(true)}
               savedTotal={savedQuoteTotal}
+              line_items={realJob?.quote?.line_items}
             />
           )}
           {activeTab === 'activity' && (
