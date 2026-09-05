@@ -4,18 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { Message, AuditEvent } from '@/app/dashboard/types';
 import { formatTime } from '@/lib/currency';
-
-// Mock initial messages using canonical Message model (sender + ISO timestamp)
-const initialMessages: Message[] = [
-  { id: '1', sender: 'client', text: "Hi, I need catering for my daughter's wedding. Around 120 guests.", timestamp: '2026-09-01T10:02:00Z' },
-  { id: '2', sender: 'agent',  text: "Absolutely! I'd be happy to help with that. What date is the wedding and where will it be held?", timestamp: '2026-09-01T10:02:30Z' },
-  { id: '3', sender: 'client', text: "It's on Saturday, 15th November in Ikeja. We're looking for a full-service catering package.", timestamp: '2026-09-01T10:04:00Z' },
-  { id: '4', sender: 'agent',  text: "Perfect. Do you have a budget range in mind for the catering?", timestamp: '2026-09-01T10:04:20Z' },
-  { id: '5', sender: 'client', text: "We're thinking around ₦350,000 to ₦400,000.", timestamp: '2026-09-01T10:06:00Z' },
-  { id: '6', sender: 'agent',  text: "Got it. Do you have any dietary preferences or special menu requirements for the guests?", timestamp: '2026-09-01T10:06:15Z' },
-  { id: '7', sender: 'client', text: "Yes, we need a mix of Nigerian and continental dishes. Also some guests are vegetarian.", timestamp: '2026-09-01T10:08:00Z' },
-  { id: '8', sender: 'agent',  text: "Understood. I've captured all the details and I'm preparing a quote for you. I'll have it ready shortly.", timestamp: '2026-09-01T10:08:30Z' },
-];
+import { getJob } from '@/lib/api';
 
 interface ChatPanelProps {
   jobId: string;
@@ -24,7 +13,24 @@ interface ChatPanelProps {
 }
 
 export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    getJob(jobId)
+      .then((job) => {
+        if (!cancelled) setMessages(job.messages);
+      })
+      .catch((err) => {
+        console.error('Failed to load job messages:', err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [jobId]);
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -87,11 +93,15 @@ export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
       </div>
 
       {/* Messages */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#F0F0EE' }}>
+        {loading && (
+          <div className="text-center text-[12px] text-[#999C98] py-4">Loading conversation...</div>
+        )}
         {messages.map((msg) => {
           const isClient = msg.sender === 'client';
-          const isAgent  = msg.sender === 'agent';
-          const isSme    = msg.sender === 'sme';
+          const isAgent = msg.sender === 'agent';
+          const isSme = msg.sender === 'sme';
           const isSystem = msg.sender === 'system';
 
           // Client → LEFT; Agent/SME/System → RIGHT
@@ -119,15 +129,14 @@ export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
                 )}
 
                 <div
-                  className={`px-3 py-2 rounded-2xl text-[13px] leading-relaxed chat-bubble-in ${
-                    isClient
-                      ? 'bg-white text-[#171817] rounded-bl-sm'
-                      : isSme
+                  className={`px-3 py-2 rounded-2xl text-[13px] leading-relaxed chat-bubble-in ${isClient
+                    ? 'bg-white text-[#171817] rounded-bl-sm'
+                    : isSme
                       ? 'bg-amber-50 text-[#171817] rounded-br-sm border border-amber-200'
                       : isAgent
-                      ? 'bg-[#DDFBEA] text-[#171817] rounded-br-sm'
-                      : 'bg-[#F0F0EE] text-[#6F716E] rounded-br-sm text-[12px] italic'
-                  }`}
+                        ? 'bg-[#DDFBEA] text-[#171817] rounded-br-sm'
+                        : 'bg-[#F0F0EE] text-[#6F716E] rounded-br-sm text-[12px] italic'
+                    }`}
                   style={isClient ? { boxShadow: '0 1px 3px rgba(20,25,20,0.06)' } : {}}
                 >
                   {msg.text}
@@ -139,7 +148,7 @@ export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
               {isAgent && (
                 <div className="w-6 h-6 rounded-full bg-[#19D66B] flex items-center justify-center ml-2 mt-auto mb-1 shrink-0">
                   <svg width="12" height="12" viewBox="0 0 22 22" fill="none">
-                    <path d="M3 4C3 2.9 3.9 2 5 2H17C18.1 2 19 2.9 19 4V13C19 14.1 18.1 15 17 15H12L8 19V15H5C3.9 15 3 14.1 3 13V4Z" fill="white" fillOpacity="0.9"/>
+                    <path d="M3 4C3 2.9 3.9 2 5 2H17C18.1 2 19 2.9 19 4V13C19 14.1 18.1 15 17 15H12L8 19V15H5C3.9 15 3 14.1 3 13V4Z" fill="white" fillOpacity="0.9" />
                   </svg>
                 </div>
               )}
