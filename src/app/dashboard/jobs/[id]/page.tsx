@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import StatusBadge, { StatusType } from '@/app/dashboard/components/StatusBadge';
 import ChatPanel from './ChatPanel';
+import { getJob } from '@/lib/api';
+import { Job } from '@/app/dashboard/types';
 import BriefPanel from './BriefPanel';
 import QuoteCard from './QuoteCard';
 import ApprovalModal from './ApprovalModal';
@@ -19,21 +21,21 @@ import { formatTime } from '@/lib/currency';
 type TabType = 'chat' | 'brief' | 'quote' | 'activity' | 'notes' | 'files';
 
 const activityLog: AuditEvent[] = [
-  { id: 'ae-1', type: 'client', label: 'Client message received',              timestamp: '2026-09-01T10:30:00Z' },
-  { id: 'ae-2', type: 'agent',  label: 'Brief extraction started',             timestamp: '2026-09-01T10:31:00Z' },
-  { id: 'ae-3', type: 'agent',  label: '7 fields extracted from conversation', timestamp: '2026-09-01T10:31:10Z' },
-  { id: 'ae-4', type: 'agent',  label: 'Clarification question generated',     timestamp: '2026-09-01T10:31:20Z' },
-  { id: 'ae-5', type: 'agent',  label: 'Clarification sent to client',         timestamp: '2026-09-01T10:31:30Z' },
-  { id: 'ae-6', type: 'client', label: 'Client responded with budget range',   timestamp: '2026-09-01T10:32:00Z' },
-  { id: 'ae-7', type: 'agent',  label: 'Brief fully populated',                timestamp: '2026-09-01T10:35:00Z' },
-  { id: 'ae-8', type: 'agent',  label: 'Draft quote generated',                timestamp: '2026-09-01T10:35:10Z' },
-  { id: 'ae-9', type: 'sme',    label: 'Awaiting SME approval',                timestamp: '2026-09-01T10:35:30Z' },
+  { id: 'ae-1', type: 'client', label: 'Client message received', timestamp: '2026-09-01T10:30:00Z' },
+  { id: 'ae-2', type: 'agent', label: 'Brief extraction started', timestamp: '2026-09-01T10:31:00Z' },
+  { id: 'ae-3', type: 'agent', label: '7 fields extracted from conversation', timestamp: '2026-09-01T10:31:10Z' },
+  { id: 'ae-4', type: 'agent', label: 'Clarification question generated', timestamp: '2026-09-01T10:31:20Z' },
+  { id: 'ae-5', type: 'agent', label: 'Clarification sent to client', timestamp: '2026-09-01T10:31:30Z' },
+  { id: 'ae-6', type: 'client', label: 'Client responded with budget range', timestamp: '2026-09-01T10:32:00Z' },
+  { id: 'ae-7', type: 'agent', label: 'Brief fully populated', timestamp: '2026-09-01T10:35:00Z' },
+  { id: 'ae-8', type: 'agent', label: 'Draft quote generated', timestamp: '2026-09-01T10:35:10Z' },
+  { id: 'ae-9', type: 'sme', label: 'Awaiting SME approval', timestamp: '2026-09-01T10:35:30Z' },
 ];
 
 const typeColor: Record<string, string> = {
   client: 'bg-blue-50 text-blue-600',
-  agent:  'bg-[#DDFBEA] text-[#079A4F]',
-  sme:    'bg-amber-50 text-amber-600',
+  agent: 'bg-[#DDFBEA] text-[#079A4F]',
+  sme: 'bg-amber-50 text-amber-600',
   system: 'bg-[#F0F0EE] text-[#6F716E]',
 };
 
@@ -41,6 +43,16 @@ export default function JobDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const { currentPersona } = usePersona();
+
+  const [realJob, setRealJob] = useState<Job | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getJob(id)
+      .then((j) => { if (!cancelled) setRealJob(j); })
+      .catch((err) => console.error('Failed to load job:', err));
+    return () => { cancelled = true; };
+  }, [id]);
 
   const personaJob = currentPersona.allJobs.find(j => j.id === id) || currentPersona.allJobs[0];
   const job = {
@@ -63,7 +75,7 @@ export default function JobDetailPage() {
   const [resolved, setResolved] = useState(false);
   const [retried, setRetried] = useState(false);
   const [savedQuoteTotal, setSavedQuoteTotal] = useState<number | null>(null);
-  const [savedJobData, setSavedJobData] = useState<{client?: string; eventType?: string} | null>(null);
+  const [savedJobData, setSavedJobData] = useState<{ client?: string; eventType?: string } | null>(null);
   const [noteText, setNoteText] = useState('');
   const [extraActivity, setExtraActivity] = useState<AuditEvent[]>([]);
 
@@ -83,7 +95,7 @@ export default function JobDetailPage() {
     setShowQuoteEditor(false);
   };
 
-  const handleJobSave = (data: {client?: string; eventType?: string}) => {
+  const handleJobSave = (data: { client?: string; eventType?: string }) => {
     setSavedJobData(data);
     setShowJobEditor(false);
   };
@@ -94,19 +106,19 @@ export default function JobDetailPage() {
 
   // Desktop bottom tabs (quote/activity/notes/files)
   const bottomTabs: { key: TabType; label: string }[] = [
-    { key: 'quote',    label: 'Quote' },
+    { key: 'quote', label: 'Quote' },
     { key: 'activity', label: 'Activity' },
-    { key: 'notes',    label: 'Notes' },
-    { key: 'files',    label: 'Files' },
+    { key: 'notes', label: 'Notes' },
+    { key: 'files', label: 'Files' },
   ];
 
   // Mobile tabs (all sections)
   const mobileTabs: { key: TabType; label: string }[] = [
-    { key: 'chat',     label: 'Chat' },
-    { key: 'brief',    label: 'Brief' },
-    { key: 'quote',    label: 'Quote' },
+    { key: 'chat', label: 'Chat' },
+    { key: 'brief', label: 'Brief' },
+    { key: 'quote', label: 'Quote' },
     { key: 'activity', label: 'Activity' },
-    { key: 'notes',    label: 'Notes' },
+    { key: 'notes', label: 'Notes' },
   ];
 
   return (
@@ -200,7 +212,10 @@ export default function JobDetailPage() {
           <ChatPanel jobId={id} onSmeMessage={handleSmeMessage} />
         </div>
         <div className="overflow-y-auto max-h-[520px] pr-1">
-          <BriefPanel />
+          <BriefPanel
+            extracted_fields={realJob?.extracted_fields}
+            missing_fields={realJob?.missing_fields}
+          />
         </div>
       </div>
 
@@ -214,11 +229,10 @@ export default function JobDetailPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 px-3 py-2 text-[12px] font-semibold rounded-[12px] transition-all whitespace-nowrap ${
-                activeTab === tab.key
-                  ? 'bg-[#19D66B] text-white'
-                  : 'text-[#6F716E] hover:text-[#171817]'
-              }`}
+              className={`flex-1 px-3 py-2 text-[12px] font-semibold rounded-[12px] transition-all whitespace-nowrap ${activeTab === tab.key
+                ? 'bg-[#19D66B] text-white'
+                : 'text-[#6F716E] hover:text-[#171817]'
+                }`}
             >
               {tab.label}
             </button>
@@ -232,7 +246,10 @@ export default function JobDetailPage() {
           </div>
         )}
         {activeTab === 'brief' && (
-          <BriefPanel />
+          <BriefPanel
+            extracted_fields={realJob?.extracted_fields}
+            missing_fields={realJob?.missing_fields}
+          />
         )}
         {activeTab === 'quote' && (
           <QuoteCard
@@ -294,11 +311,10 @@ export default function JobDetailPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 text-[13px] font-medium transition-colors mr-1 ${
-                activeTab === tab.key
-                  ? 'text-[#171817] font-semibold border-b-2 border-[#19D66B]'
-                  : 'text-[#6F716E] hover:text-[#171817] border-b-2 border-transparent'
-              }`}
+              className={`px-4 py-2 text-[13px] font-medium transition-colors mr-1 ${activeTab === tab.key
+                ? 'text-[#171817] font-semibold border-b-2 border-[#19D66B]'
+                : 'text-[#6F716E] hover:text-[#171817] border-b-2 border-transparent'
+                }`}
             >
               {tab.label}
             </button>
