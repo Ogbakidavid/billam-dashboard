@@ -29,7 +29,7 @@ export type BusinessType =
   | 'caterer' |'tailor' |'photographer' |'event_planner' |'equipment_rental';
 
 // ── Message ────────────────────────────────────────────────────────────────────
-export type MessageSender = 'client' | 'agent' | 'sme';
+export type MessageSender = 'client' | 'agent' | 'sme' | 'system';
 
 export interface Message {
   id: string;
