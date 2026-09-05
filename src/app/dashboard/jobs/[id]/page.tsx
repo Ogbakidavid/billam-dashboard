@@ -376,6 +376,7 @@ export default function JobDetailPage() {
       )}
       {showQuoteEditor && (
         <QuoteEditor
+          jobId={id}
           clientName={displayClient}
           eventName={displayJob}
           onClose={() => setShowQuoteEditor(false)}
