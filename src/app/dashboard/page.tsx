@@ -401,6 +401,10 @@ export default function DashboardPage() {
 
       {modal?.type === 'approve' && (
         <ApprovalModal
+          jobId={modal.itemId}
+          clientName={modal.client}
+          eventName={modal.job}
+          total={modal.amount}
           onConfirm={handleApproved}
           onCancel={closeModal}
         />

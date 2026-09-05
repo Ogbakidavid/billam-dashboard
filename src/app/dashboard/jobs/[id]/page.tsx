@@ -372,7 +372,14 @@ export default function JobDetailPage() {
 
       {/* ── Modals ── */}
       {showApproval && (
-        <ApprovalModal onConfirm={handleApprove} onCancel={() => setShowApproval(false)} />
+        <ApprovalModal
+          jobId={id}
+          clientName={displayClient}
+          eventName={displayJob}
+          total={realJob?.quote?.total ?? 0}
+          onConfirm={handleApprove}
+          onCancel={() => setShowApproval(false)}
+        />
       )}
       {showQuoteEditor && (
         <QuoteEditor
