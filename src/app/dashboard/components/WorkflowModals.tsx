@@ -177,7 +177,7 @@ export function ReviewIssueModal({ client, job, onClose, onRetry, onAdjust }: Re
 interface ReviewQuoteModalProps {
   client: string;
   job: string;
-  amount: string;
+  amount: number;
   onClose: () => void;
   onApprove: () => void;
   onEdit: () => void;
@@ -302,8 +302,8 @@ export function ViewJobModal({ client, job, summary, detail, amount, status, onC
         <div className="mt-4 space-y-2.5">
           {[
             { label: 'Summary', value: summary },
-            { label: 'Status',  value: JOB_STATE_LABELS[status] ?? status },
-            { label: 'Amount',  value: formatNGN(amount) },
+            { label: 'Status', value: JOB_STATE_LABELS[status] ?? status },
+            { label: 'Amount', value: formatNGN(amount) },
           ].map(row => (
             <div key={row.label} className="flex items-center justify-between">
               <span className="text-[12px] text-[#6F716E]">{row.label}</span>

@@ -44,7 +44,7 @@ interface ModalState {
   job: string;
   summary: string;
   detail: string;
-  amount: string;
+  amount: number;
   status: string;
 }
 
@@ -119,12 +119,12 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {currentPersona.kpis.map((kpi) => {
           const filterMap: Record<string, string> = {
-            'Active Jobs':        'active',
-            'Needs Your Input':   'NEEDS_SME_INPUT',
-            'Awaiting Approval':  'AWAITING_HUMAN_APPROVAL',
-            'In Progress':        'active',
-            'Completed':          'EXECUTED',
-            'Failed':             'FAILED_RETRY',
+            'Active Jobs': 'active',
+            'Needs Your Input': 'NEEDS_SME_INPUT',
+            'Awaiting Approval': 'AWAITING_HUMAN_APPROVAL',
+            'In Progress': 'active',
+            'Completed': 'EXECUTED',
+            'Failed': 'FAILED_RETRY',
           };
           const filterValue = filterMap[kpi.label] ?? 'all';
           return (
@@ -243,8 +243,8 @@ export default function DashboardPage() {
                 contentStyle={{ background: '#fff', border: '1px solid #E7E7E3', borderRadius: 12, fontSize: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}
                 cursor={{ stroke: '#E7E7E3', strokeWidth: 1 }}
               />
-              <Area type="monotone" dataKey="jobs"   stroke="#C8C9C7" strokeWidth={1.5} fill="url(#colorJobs)"   dot={false} />
-              <Area type="monotone" dataKey="quotes" stroke="#19D66B" strokeWidth={2}   fill="url(#colorQuotes)" dot={false} activeDot={{ r: 4, fill: '#19D66B', stroke: '#fff', strokeWidth: 2 }} />
+              <Area type="monotone" dataKey="jobs" stroke="#C8C9C7" strokeWidth={1.5} fill="url(#colorJobs)" dot={false} />
+              <Area type="monotone" dataKey="quotes" stroke="#19D66B" strokeWidth={2} fill="url(#colorQuotes)" dot={false} activeDot={{ r: 4, fill: '#19D66B', stroke: '#fff', strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -266,11 +266,11 @@ export default function DashboardPage() {
         <div className="hidden sm:block">
           <div className="grid grid-cols-12 gap-4 px-5 py-2.5 border-b border-[#E7E7E3] bg-[#FAFAF9]">
             {[
-              { label: 'Client',  span: 'col-span-3' },
-              { label: 'Job',     span: 'col-span-3' },
-              { label: 'Status',  span: 'col-span-2' },
-              { label: 'Amount',  span: 'col-span-2 text-right' },
-              { label: 'Action',  span: 'col-span-1 text-right' },
+              { label: 'Client', span: 'col-span-3' },
+              { label: 'Job', span: 'col-span-3' },
+              { label: 'Status', span: 'col-span-2' },
+              { label: 'Amount', span: 'col-span-2 text-right' },
+              { label: 'Action', span: 'col-span-1 text-right' },
               { label: 'Updated', span: 'col-span-1 text-right' },
             ].map((h) => (
               <span key={h.label} className={`text-[11px] font-semibold text-[#999C98] uppercase tracking-wider ${h.span}`}>
