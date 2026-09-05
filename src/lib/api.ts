@@ -183,3 +183,142 @@ export async function getJob(id: string): Promise<Job> {
   const json = await res.json();
   return mapJob(json.data);
 }
+
+export async function sendMessage(id: string, text: string): Promise<Job> {
+  const res = await fetch(`${API_BASE_URL}/jobs/${id}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message_text: text,
+      received_at: new Date().toISOString(),
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`sendMessage failed: ${res.status}`);
+  }
+
+  const json = await res.json();
+  return mapJob(json.data);
+}
+
+export async function getQuote(id: string): Promise<Quote | undefined> {
+  const res = await fetch(`${API_BASE_URL}/jobs/${id}/quote`);
+
+  if (!res.ok) {
+    throw new Error(`getQuote failed: ${res.status}`);
+  }
+
+  const json = await res.json();
+  return mapQuote(id, json.data);
+}
+
+export async function editQuote(
+  id: string,
+  lineItems: LineItem[],
+  notes?: string
+): Promise<Quote | undefined> {
+  const res = await fetch(`${API_BASE_URL}/jobs/${id}/quote`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      line_items: lineItems.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total: item.total,
+      })),
+      notes,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`editQuote failed: ${res.status}`);
+  }
+
+  const json = await res.json();
+  return mapQuote(id, json.data.quote ?? json.data);
+}
+
+export interface ApproveQuoteResult {
+  id: string;
+  state: string;
+  quoteStatus: string;
+  sentAt: string;
+}
+
+export async function approveQuote(
+  id: string,
+  approvedBy: string
+): Promise<ApproveQuoteResult> {
+  const res = await fetch(`${API_BASE_URL}/jobs/${id}/approve_quote`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ approved_by: approvedBy }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`approveQuote failed: ${res.status}`);
+  }
+
+  const json = await res.json();
+  const data = json.data;
+
+  return {
+    id: data.job_id,
+    state: data.state,
+    quoteStatus: data.quote_status,
+    sentAt: data.sent_at,
+  };
+}
+
+export interface MissingFieldsResult {
+  missingFields: string[];
+  summary?: string;
+}
+
+export async function getMissingFields(id: string): Promise<MissingFieldsResult> {
+  const res = await fetch(`${API_BASE_URL}/jobs/${id}/missing_fields`);
+
+  if (!res.ok) {
+    throw new Error(`getMissingFields failed: ${res.status}`);
+  }
+
+  const json = await res.json();
+  return {
+    missingFields: json.data.missing_fields ?? [],
+    summary: json.data.summary,
+  };
+}
+
+export async function submitManualInput(
+  id: string,
+  suppliedFields: Record<string, any>,
+  source?: string
+): Promise<Job> {
+  const res = await fetch(`${API_BASE_URL}/jobs/${id}/manual_input`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ supplied_fields: suppliedFields, source }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`submitManualInput failed: ${res.status}`);
+  }
+
+  const json = await res.json();
+  return mapJob(json.data);
+}
+
+export async function retryJob(id: string): Promise<Job> {
+  const res = await fetch(`${API_BASE_URL}/jobs/${id}/retry`, {
+    method: "POST",
+  });
+
+  if (!res.ok) {
+    throw new Error(`retryJob failed: ${res.status}`);
+  }
+
+  const json = await res.json();
+  return mapJob(json.data);
+}
