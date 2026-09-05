@@ -100,7 +100,13 @@ export default function JobDetailPage() {
     setShowJobEditor(false);
   };
 
-  const effectiveStatus: JobState = approved ? 'EXECUTED' : resolved ? 'REASONING' : retried ? 'REASONING' : job.status as JobState;
+  const effectiveStatus: JobState = approved
+    ? 'EXECUTED'
+    : resolved
+      ? 'REASONING'
+      : retried
+        ? 'REASONING'
+        : (realJob?.state as JobState) || job.status;
   const displayClient = savedJobData?.client || job.client;
   const displayJob = savedJobData?.eventType || job.job;
 
@@ -159,7 +165,7 @@ export default function JobDetailPage() {
             Edit Job
           </button>
 
-          {!approved && effectiveStatus === 'AWAITING_HUMAN_APPROVAL' && (
+          {!approved && effectiveStatus === 'AWAITING_HUMAN_APPROVAL' && realJob?.quote && (
             <button
               onClick={() => setShowApproval(true)}
               className="flex items-center gap-2 px-4 py-2 bg-[#19D66B] text-white text-[13px] font-bold rounded-xl hover:bg-[#079A4F] transition-colors"
@@ -252,12 +258,25 @@ export default function JobDetailPage() {
           />
         )}
         {activeTab === 'quote' && (
-          <QuoteCard
-            onApprove={() => setShowApproval(true)}
-            onEditQuote={() => setShowQuoteEditor(true)}
-            savedTotal={savedQuoteTotal}
-            line_items={realJob?.quote?.line_items}
-          />
+          realJob?.quote ? (
+            <QuoteCard
+              onApprove={() => setShowApproval(true)}
+              onEditQuote={() => setShowQuoteEditor(true)}
+              savedTotal={savedQuoteTotal}
+              line_items={realJob.quote.line_items}
+            />
+          ) : effectiveStatus === 'FAILED_RETRY' ? (
+            <div className="bg-white border border-[#E7E7E3] rounded-[20px] p-8 text-center">
+              <p className="text-[13px] font-semibold text-red-500 mb-1">No quote could be generated</p>
+              <p className="text-[12px] text-[#6F716E]">
+                {realJob?.error_message || 'This request could not be quoted as stated. Review the client brief and consider adjusting scope or budget.'}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white border border-[#E7E7E3] rounded-[20px] p-8 text-center">
+              <p className="text-[13px] text-[#6F716E]">No quote yet, waiting on the client to provide a complete brief.</p>
+            </div>
+          )
         )}
         {activeTab === 'activity' && (
           <div
@@ -324,12 +343,25 @@ export default function JobDetailPage() {
 
         <div className="p-5">
           {activeTab === 'quote' && (
-            <QuoteCard
-              onApprove={() => setShowApproval(true)}
-              onEditQuote={() => setShowQuoteEditor(true)}
-              savedTotal={savedQuoteTotal}
-              line_items={realJob?.quote?.line_items}
-            />
+            realJob?.quote ? (
+              <QuoteCard
+                onApprove={() => setShowApproval(true)}
+                onEditQuote={() => setShowQuoteEditor(true)}
+                savedTotal={savedQuoteTotal}
+                line_items={realJob.quote.line_items}
+              />
+            ) : effectiveStatus === 'FAILED_RETRY' ? (
+              <div className="bg-white border border-[#E7E7E3] rounded-[20px] p-8 text-center">
+                <p className="text-[13px] font-semibold text-red-500 mb-1">No quote could be generated</p>
+                <p className="text-[12px] text-[#6F716E]">
+                  {realJob?.error_message || 'This request could not be quoted as stated. Review the client brief and consider adjusting scope or budget.'}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-white border border-[#E7E7E3] rounded-[20px] p-8 text-center">
+                <p className="text-[13px] text-[#6F716E]">No quote yet, waiting on the client to provide a complete brief.</p>
+              </div>
+            )
           )}
           {activeTab === 'activity' && (
             <div className="space-y-3">

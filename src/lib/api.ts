@@ -167,7 +167,8 @@ function mapJob(backendJob: any): Job {
     ),
     missing_fields: backendJob.missing_required_fields ?? [],
     quote: mapQuote(backendJob.job_id, backendJob.quote),
-    audit_events: [], // backend doesn't return audit trail on the job object itself — see getAuditTrail below
+    audit_events: [],
+    error_message: backendJob.error_message ?? null,
     created_at: backendJob.created_at,
     updated_at: backendJob.updated_at,
   };
@@ -186,8 +187,8 @@ export async function getJob(id: string): Promise<Job> {
 
 export async function sendMessage(id: string, text: string): Promise<Job> {
   const res = await fetch(`${API_BASE_URL}/jobs/${id}/messages`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message_text: text,
       received_at: new Date().toISOString(),
@@ -219,8 +220,8 @@ export async function editQuote(
   notes?: string
 ): Promise<Quote | undefined> {
   const res = await fetch(`${API_BASE_URL}/jobs/${id}/quote`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       line_items: lineItems.map((item) => ({
         name: item.name,
@@ -247,13 +248,10 @@ export interface ApproveQuoteResult {
   sentAt: string;
 }
 
-export async function approveQuote(
-  id: string,
-  approvedBy: string
-): Promise<ApproveQuoteResult> {
+export async function approveQuote(id: string, approvedBy: string): Promise<ApproveQuoteResult> {
   const res = await fetch(`${API_BASE_URL}/jobs/${id}/approve_quote`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ approved_by: approvedBy }),
   });
 
@@ -297,8 +295,8 @@ export async function submitManualInput(
   source?: string
 ): Promise<Job> {
   const res = await fetch(`${API_BASE_URL}/jobs/${id}/manual_input`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ supplied_fields: suppliedFields, source }),
   });
 
@@ -312,7 +310,7 @@ export async function submitManualInput(
 
 export async function retryJob(id: string): Promise<Job> {
   const res = await fetch(`${API_BASE_URL}/jobs/${id}/retry`, {
-    method: "POST",
+    method: 'POST',
   });
 
   if (!res.ok) {

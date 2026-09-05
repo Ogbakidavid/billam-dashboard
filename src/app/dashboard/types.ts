@@ -6,18 +6,25 @@
 
 // ── Job State ──────────────────────────────────────────────────────────────────
 export type JobState =
-  | 'IDLE' |'INGESTING' |'REASONING' |'CLARIFYING' |'NEEDS_SME_INPUT' |'AWAITING_HUMAN_APPROVAL' |'EXECUTED' |'FAILED_RETRY';
+  | 'IDLE'
+  | 'INGESTING'
+  | 'REASONING'
+  | 'CLARIFYING'
+  | 'NEEDS_SME_INPUT'
+  | 'AWAITING_HUMAN_APPROVAL'
+  | 'EXECUTED'
+  | 'FAILED_RETRY';
 
 /** Map canonical JobState → human-readable UI label */
 export const JOB_STATE_LABELS: Record<JobState, string> = {
-  IDLE:                     'Idle',
-  INGESTING:                'Ingesting',
-  REASONING:                'In Progress',
-  CLARIFYING:               'Clarifying',
-  NEEDS_SME_INPUT:          'Needs your input',
-  AWAITING_HUMAN_APPROVAL:  'Awaiting approval',
-  EXECUTED:                 'Executed',
-  FAILED_RETRY:             'Failed / Retry',
+  IDLE: 'Idle',
+  INGESTING: 'Ingesting',
+  REASONING: 'In Progress',
+  CLARIFYING: 'Clarifying',
+  NEEDS_SME_INPUT: 'Needs your input',
+  AWAITING_HUMAN_APPROVAL: 'Awaiting approval',
+  EXECUTED: 'Executed',
+  FAILED_RETRY: 'Failed / Retry',
 };
 
 // ── Quote Status ───────────────────────────────────────────────────────────────
@@ -25,8 +32,7 @@ export type QuoteStatus = 'draft' | 'awaiting_approval' | 'sent' | 'expired';
 
 // ── Business Type ──────────────────────────────────────────────────────────────
 export type BusinessType =
-  | 'event_vendor'
-  | 'caterer' |'tailor' |'photographer' |'event_planner' |'equipment_rental';
+  'event_vendor' | 'caterer' | 'tailor' | 'photographer' | 'event_planner' | 'equipment_rental';
 
 // ── Message ────────────────────────────────────────────────────────────────────
 export type MessageSender = 'client' | 'agent' | 'sme' | 'system';
@@ -108,6 +114,7 @@ export interface Job {
   missing_fields: string[];
   quote?: Quote;
   audit_events: AuditEvent[];
+  error_message?: string | null;
   created_at: string;
   updated_at: string;
   /** Display helpers — populated from conversation context */
