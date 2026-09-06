@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { LineItem, Contingency } from '@/app/dashboard/types';
 import { formatNGN } from '@/lib/currency';
+import { editQuote } from '@/lib/api';
 
 interface QuoteEditorProps {
+  jobId?: string;
   onClose: () => void;
   onSave: (total: number) => void;
   clientName?: string;
@@ -15,11 +17,11 @@ interface QuoteEditorProps {
 
 // Default mock data using canonical LineItem/Contingency fields
 const defaultItems: LineItem[] = [
-  { id: '1', name: 'Full Venue Decoration',  quantity: 1,  unit_price: 450000, total: 450000 },
-  { id: '2', name: 'Stage & Backdrop Setup', quantity: 1,  unit_price: 180000, total: 180000 },
-  { id: '3', name: 'Table Styling',          quantity: 30, unit_price: 5000,   total: 150000 },
-  { id: '4', name: 'Floral Arrangements',    quantity: 1,  unit_price: 120000, total: 120000 },
-  { id: '5', name: 'Lighting Setup',         quantity: 1,  unit_price: 85000,  total: 85000 },
+  { id: '1', name: 'Full Venue Decoration', quantity: 1, unit_price: 450000, total: 450000 },
+  { id: '2', name: 'Stage & Backdrop Setup', quantity: 1, unit_price: 180000, total: 180000 },
+  { id: '3', name: 'Table Styling', quantity: 30, unit_price: 5000, total: 150000 },
+  { id: '4', name: 'Floral Arrangements', quantity: 1, unit_price: 120000, total: 120000 },
+  { id: '5', name: 'Lighting Setup', quantity: 1, unit_price: 85000, total: 85000 },
 ];
 
 const defaultContingencies: Contingency[] = [
@@ -28,7 +30,7 @@ const defaultContingencies: Contingency[] = [
 
 let nextId = 100;
 
-export default function QuoteEditor({ onClose, onSave, clientName = 'Adaeze Okonkwo', eventName = 'Wedding Decoration', initialItems }: QuoteEditorProps) {
+export default function QuoteEditor({ jobId, onClose, onSave, clientName = 'Adaeze Okonkwo', eventName = 'Wedding Decoration', initialItems }: QuoteEditorProps) {
   const [lineItems, setLineItems] = useState<LineItem[]>(initialItems || defaultItems);
   const [contingencies, setContingencies] = useState<Contingency[]>(defaultContingencies);
 
@@ -36,6 +38,22 @@ export default function QuoteEditor({ onClose, onSave, clientName = 'Adaeze Okon
   const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   const contingencyTotal = contingencies.reduce((sum, c) => sum + c.amount, 0);
   const total = subtotal + contingencyTotal;
+
+  const handleSave = async () => {
+    if (!jobId) {
+      // No real job context here yet (dashboard overview / quotes list
+      // still use mock data) — just update local UI for now.
+      onSave(total);
+      return;
+    }
+    try {
+      await editQuote(jobId, lineItems);
+      onSave(total);
+    } catch (err) {
+      console.error('Failed to save quote:', err);
+      onSave(total);
+    }
+  };
 
   // Update a line item field; recalculate total inline
   const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
@@ -300,7 +318,7 @@ export default function QuoteEditor({ onClose, onSave, clientName = 'Adaeze Okon
             Cancel
           </button>
           <button
-            onClick={() => onSave(total)}
+            onClick={handleSave}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#19D66B] text-white text-[13px] font-bold rounded-xl hover:bg-[#079A4F] transition-colors"
             style={{ boxShadow: '0 0 0 1px rgba(25,214,107,0.2), 0 4px 24px rgba(25,214,107,0.15)' }}
           >

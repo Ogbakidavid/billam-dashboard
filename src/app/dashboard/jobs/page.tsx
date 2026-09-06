@@ -9,14 +9,16 @@ import EmptyState from '@/app/dashboard/components/EmptyState';
 import { usePersona } from '@/app/dashboard/context/PersonaContext';
 import { JobState } from '@/app/dashboard/types';
 import { formatNGN } from '@/lib/currency';
+import { useRouter } from 'next/navigation';
+import { createJob } from '@/lib/api';
 
 const filters = [
-  { label: 'All',               value: 'all' },
-  { label: 'Active',            value: 'active' },
-  { label: 'Needs Input',       value: 'NEEDS_SME_INPUT' },
+  { label: 'All', value: 'all' },
+  { label: 'Active', value: 'active' },
+  { label: 'Needs Input', value: 'NEEDS_SME_INPUT' },
   { label: 'Awaiting Approval', value: 'AWAITING_HUMAN_APPROVAL' },
-  { label: 'Completed',         value: 'EXECUTED' },
-  { label: 'Failed',            value: 'FAILED_RETRY' },
+  { label: 'Completed', value: 'EXECUTED' },
+  { label: 'Failed', value: 'FAILED_RETRY' },
 ];
 
 const activeStates: JobState[] = ['REASONING', 'CLARIFYING', 'NEEDS_SME_INPUT', 'AWAITING_HUMAN_APPROVAL'];
@@ -26,6 +28,23 @@ function JobsContent() {
   const searchParams = useSearchParams();
   const [activeFilter, setActiveFilter] = useState('all');
   const [search, setSearch] = useState('');
+
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+
+  const handleCreateJob = async () => {
+    setCreating(true);
+    try {
+      const job = await createJob({
+        businessId: 'biz_vendor_001',
+        businessType: 'event_vendor',
+      });
+      router.push(`/dashboard/jobs/${job.id}`);
+    } catch (err) {
+      console.error('Failed to create job:', err);
+      setCreating(false);
+    }
+  };
 
   useEffect(() => {
     const filterParam = searchParams.get('filter');
@@ -61,11 +80,13 @@ function JobsContent() {
           <p className="text-[12px] text-[#6F716E] mt-0.5">{currentPersona.allJobs.length} total jobs · {currentPersona.label}</p>
         </div>
         <button
-          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#19D66B] text-white text-[13px] font-bold rounded-xl hover:bg-[#079A4F] transition-colors"
+          onClick={handleCreateJob}
+          disabled={creating}
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#19D66B] text-white text-[13px] font-bold rounded-xl hover:bg-[#079A4F] transition-colors disabled:opacity-50"
           style={{ boxShadow: '0 0 0 1px rgba(25,214,107,0.2), 0 4px 24px rgba(25,214,107,0.15)' }}
         >
           <Icon name="PlusIcon" size={15} />
-          <span className="hidden sm:inline">New Job</span>
+          <span className="hidden sm:inline">{creating ? 'Creating...' : 'New Job'}</span>
         </button>
       </div>
 
@@ -93,11 +114,10 @@ function JobsContent() {
               <button
                 key={f.value}
                 onClick={() => setActiveFilter(f.value)}
-                className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all whitespace-nowrap shrink-0 ${
-                  activeFilter === f.value
-                    ? 'bg-[#19D66B] text-white'
-                    : 'bg-[#F0F0EE] text-[#6F716E] hover:bg-[#E7E7E3] hover:text-[#171817]'
-                }`}
+                className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all whitespace-nowrap shrink-0 ${activeFilter === f.value
+                  ? 'bg-[#19D66B] text-white'
+                  : 'bg-[#F0F0EE] text-[#6F716E] hover:bg-[#E7E7E3] hover:text-[#171817]'
+                  }`}
               >
                 {f.label}
               </button>
@@ -113,12 +133,12 @@ function JobsContent() {
       >
         <div className="grid grid-cols-12 gap-4 px-5 py-3 border-b border-[#E7E7E3] bg-[#FAFAF9]">
           {[
-            { label: 'Client',        span: 'col-span-3' },
-            { label: 'Job',           span: 'col-span-3' },
-            { label: 'Status',        span: 'col-span-2' },
-            { label: 'Amount',        span: 'col-span-2 text-right' },
-            { label: 'Action',        span: 'col-span-1 text-right' },
-            { label: 'Updated',       span: 'col-span-1 text-right' },
+            { label: 'Client', span: 'col-span-3' },
+            { label: 'Job', span: 'col-span-3' },
+            { label: 'Status', span: 'col-span-2' },
+            { label: 'Amount', span: 'col-span-2 text-right' },
+            { label: 'Action', span: 'col-span-1 text-right' },
+            { label: 'Updated', span: 'col-span-1 text-right' },
           ].map((h) => (
             <span key={h.label} className={`text-[11px] font-semibold text-[#999C98] uppercase tracking-wider ${h.span}`}>
               {h.label}
