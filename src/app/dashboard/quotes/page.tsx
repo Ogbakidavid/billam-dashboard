@@ -8,6 +8,8 @@ import { usePersona } from '@/app/dashboard/context/PersonaContext';
 import QuoteEditor from '@/app/dashboard/components/QuoteEditor';
 
 import { formatNGN } from '@/lib/currency';
+import { listJobs } from '@/lib/api';
+import { useEffect } from 'react';
 
 const tabs = ['All', 'Draft', 'Awaiting Approval', 'Sent', 'Expired'];
 
@@ -19,19 +21,58 @@ const tabFilter: Record<string, StatusType[]> = {
   'Expired': ['expired'],
 };
 
+interface QuoteRow {
+  id: string;
+  client: string;
+  event: string;
+  status: StatusType;
+  amount: number;
+}
+
 export default function QuotesPage() {
   const { currentPersona } = usePersona();
   const [activeTab, setActiveTab] = useState('All');
   const [editingQuote, setEditingQuote] = useState<{ client: string; event: string } | null>(null);
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
+  const [quotes, setQuotes] = useState<QuoteRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listJobs()
+      .then((jobs) => {
+        // Only jobs that reached a real quote are shown here.
+        // NOTE: real jobs have no "client name" field at all — there's
+        // no WhatsApp/identity capture upstream, so this is a known
+        // display gap, not something fixable on the frontend alone.
+        const rows: QuoteRow[] = jobs
+          .filter((j) => j.quote)
+          .map((j) => {
+            const eventTypeField = j.extracted_fields.find((f) => f.key === 'event_type');
+            let status: StatusType = 'draft';
+            if (j.state === 'AWAITING_HUMAN_APPROVAL') status = 'awaiting_approval';
+            else if (j.state === 'EXECUTED') status = 'sent';
+
+            return {
+              id: j.id.slice(0, 8),
+              client: `Client ${j.id.slice(0, 4)}`,
+              event: eventTypeField?.value || j.business_type,
+              status,
+              amount: j.quote?.total ?? 0,
+            };
+          });
+        setQuotes(rows);
+      })
+      .catch((err) => console.error('Failed to load quotes:', err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = activeTab === 'All'
-    ? currentPersona.quotes
-    : currentPersona.quotes.filter((q) => tabFilter[activeTab]?.includes(q.status as StatusType));
+    ? quotes
+    : quotes.filter((q) => tabFilter[activeTab]?.includes(q.status));
 
-  const getStatus = (q: typeof currentPersona.quotes[0]): StatusType => {
+  const getStatus = (q: QuoteRow): StatusType => {
     if (approvedIds.has(q.id)) return 'sent';
-    return q.status as StatusType;
+    return q.status;
   };
 
   return (
@@ -39,7 +80,7 @@ export default function QuotesPage() {
       {/* Header */}
       <div>
         <h1 className="text-[20px] sm:text-[22px] font-bold text-[#171817]">Quotes</h1>
-        <p className="text-[12px] text-[#6F716E] mt-0.5">{currentPersona.quotes.length} total quotes · {currentPersona.label}</p>
+        <p className="text-[12px] text-[#6F716E] mt-0.5">{loading ? 'Loading...' : `${quotes.length} total quotes`} · {currentPersona.label}</p>
       </div>
 
       {/* Tabs — scrollable on mobile */}
@@ -48,11 +89,10 @@ export default function QuotesPage() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-3 sm:px-4 py-2.5 text-[12px] sm:text-[13px] font-medium transition-colors whitespace-nowrap shrink-0 ${
-              activeTab === tab
-                ? 'text-[#171817] font-semibold border-b-2 border-[#19D66B]'
-                : 'text-[#6F716E] hover:text-[#171817] border-b-2 border-transparent'
-            }`}
+            className={`px-3 sm:px-4 py-2.5 text-[12px] sm:text-[13px] font-medium transition-colors whitespace-nowrap shrink-0 ${activeTab === tab
+              ? 'text-[#171817] font-semibold border-b-2 border-[#19D66B]'
+              : 'text-[#6F716E] hover:text-[#171817] border-b-2 border-transparent'
+              }`}
           >
             {tab}
           </button>
@@ -67,11 +107,11 @@ export default function QuotesPage() {
         <div className="grid grid-cols-12 gap-4 px-5 py-3 border-b border-[#E7E7E3] bg-[#FAFAF9]">
           {[
             { label: 'Quote ID', span: 'col-span-2' },
-            { label: 'Client',   span: 'col-span-3' },
-            { label: 'Event',    span: 'col-span-3' },
-            { label: 'Status',   span: 'col-span-2' },
-            { label: 'Amount',   span: 'col-span-1 text-right' },
-            { label: 'Action',   span: 'col-span-1 text-right' },
+            { label: 'Client', span: 'col-span-3' },
+            { label: 'Event', span: 'col-span-3' },
+            { label: 'Status', span: 'col-span-2' },
+            { label: 'Amount', span: 'col-span-1 text-right' },
+            { label: 'Action', span: 'col-span-1 text-right' },
           ].map((h) => (
             <span key={h.label} className={`text-[11px] font-semibold text-[#999C98] uppercase tracking-wider ${h.span}`}>
               {h.label}

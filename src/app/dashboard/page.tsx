@@ -16,6 +16,7 @@ import ApprovalModal from '@/app/dashboard/jobs/[id]/ApprovalModal';
 import { JobState } from '@/app/dashboard/types';
 import { formatNGN } from '@/lib/currency';
 
+
 const chartData = [
   { month: 'Mar', quotes: 12, jobs: 18 },
   { month: 'Apr', quotes: 19, jobs: 24 },

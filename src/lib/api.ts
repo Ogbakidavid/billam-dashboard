@@ -186,6 +186,17 @@ export async function getJob(id: string): Promise<Job> {
   return mapJob(json.data);
 }
 
+export async function listJobs(): Promise<Job[]> {
+  const res = await fetch(`${API_BASE_URL}/jobs`);
+
+  if (!res.ok) {
+    throw new Error(`listJobs failed: ${res.status}`);
+  }
+
+  const json = await res.json();
+  return (json.data ?? []).map(mapJob);
+}
+
 export async function sendMessage(id: string, text: string): Promise<Job> {
   const res = await fetch(`${API_BASE_URL}/jobs/${id}/messages`, {
     method: 'POST',
