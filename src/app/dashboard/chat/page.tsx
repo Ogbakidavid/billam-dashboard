@@ -131,6 +131,7 @@ export default function ChatSimulatorPage() {
 
     try {
       const job = await apiSendMessage(jobId, text);
+      console.log('sendMessage response:', job);
       setJobState(job.state);
 
       // If the agent's real response landed in the transcript (e.g. a
