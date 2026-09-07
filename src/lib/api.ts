@@ -130,6 +130,7 @@ function mapQuote(jobId: string, quote: any): Quote | undefined {
     status: statusMap[quote.status] ?? 'draft',
     created_at: quote.created_at ?? new Date().toISOString(),
     updated_at: quote.updated_at ?? new Date().toISOString(),
+    draft_message: quote.draft_message ?? undefined,
   };
 }
 

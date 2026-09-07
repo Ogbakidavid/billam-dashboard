@@ -77,6 +77,8 @@ export interface Quote {
   status: QuoteStatus;
   created_at: string;
   updated_at: string;
+  /** The actual client-facing message the AI generated for this quote */
+  draft_message?: string;
 }
 
 // ── Brief Fields ───────────────────────────────────────────────────────────────
