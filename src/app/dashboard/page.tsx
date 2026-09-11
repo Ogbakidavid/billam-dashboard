@@ -15,6 +15,7 @@ import { ResolveModal, ReviewIssueModal, ReviewQuoteModal, ViewJobModal } from '
 import ApprovalModal from '@/app/dashboard/jobs/[id]/ApprovalModal';
 import { JobState } from '@/app/dashboard/types';
 import { formatNGN } from '@/lib/currency';
+import { approveQuote } from '@/lib/api';
 
 const chartData = [
   { month: 'Mar', quotes: 12, jobs: 18 },
@@ -83,10 +84,16 @@ export default function DashboardPage() {
     closeModal();
   };
 
-  const handleApproved = () => {
-    if (modal) setApprovedIds(prev => new Set([...prev, modal.itemId]));
-    closeModal();
-    setShowAlert(true);
+  const handleApproved = async () => {
+    if (!modal) return;
+    try {
+      await approveQuote(modal.itemId);
+      setApprovedIds(prev => new Set([...prev, modal.itemId]));
+      closeModal();
+      setShowAlert(true);
+    } catch (error) {
+      console.error('Failed to approve quote:', error);
+    }
   };
 
   const getEffectiveStatus = (item: typeof currentPersona.attentionItems[0]): StatusType => {
@@ -403,6 +410,9 @@ export default function DashboardPage() {
         <ApprovalModal
           onConfirm={handleApproved}
           onCancel={closeModal}
+          clientName={modal.client}
+          eventName={modal.job}
+          total={modal.amount}
         />
       )}
     </div>

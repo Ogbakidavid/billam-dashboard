@@ -105,8 +105,13 @@ export default function ChatSimulatorPage() {
         if (job) setMessages(extractMessages(job));
       })
       .catch(() => {
-        // Job no longer exists on backend — clear stored id
+        // The backend may have been restarted/reseeded since this browser
+        // session. Do not leave the simulator displaying a dead job ID after
+        // the restore request returns 404; the next message will create a
+        // fresh job normally.
         localStorage.removeItem('billam_active_job_id');
+        setJobId(null);
+        setMessages([]);
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -181,7 +186,7 @@ export default function ChatSimulatorPage() {
 
       // 1. If no job exists yet, create it silently
       if (!activeJobId) {
-        const job = await createJob({ business_id: businessId, business_type: businessType, client_message: '' });
+        const job = await createJob({ business_id: businessId, business_type: businessType });
         activeJobId = job.job_id;
         setJobId(activeJobId);
         localStorage.setItem('billam_active_job_id', activeJobId);

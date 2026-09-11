@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import StatusBadge, { StatusType } from '@/app/dashboard/components/StatusBadge';
 import Icon from '@/components/ui/AppIcon';
 import EmptyState from '@/app/dashboard/components/EmptyState';
 import { usePersona } from '@/app/dashboard/context/PersonaContext';
+import { QuoteStatus } from '@/app/dashboard/types';
 import QuoteEditor from '@/app/dashboard/components/QuoteEditor';
+import { approveQuote, getJobs, ApiJob } from '@/lib/api';
 
 import { formatNGN } from '@/lib/currency';
 
@@ -24,12 +26,38 @@ export default function QuotesPage() {
   const [activeTab, setActiveTab] = useState('All');
   const [editingQuote, setEditingQuote] = useState<{ client: string; event: string } | null>(null);
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
+  const [apiQuotes, setApiQuotes] = useState<typeof currentPersona.quotes | null>(null);
+  const [quoteJobIds, setQuoteJobIds] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const businessId = `biz-${currentPersona.key.replace(/_/g, '-')}`;
+    getJobs(businessId).then(({ jobs }) => {
+      const jobIds: Record<string, string> = {};
+      const quotes = jobs.filter((job: ApiJob) => job.quote).map((job: ApiJob) => {
+        const quote = job.quote!;
+        jobIds[quote.id] = job.job_id;
+        return {
+          id: quote.id,
+          client: job.extracted_fields?.client_name || 'Unknown Client',
+          event: job.extracted_fields?.event_type || 'Unknown Event',
+          amount: quote.total,
+          status: (quote.status === 'draft' ? 'draft' : quote.status === 'sent' ? 'sent' : 'awaiting_approval') as QuoteStatus,
+          created: new Date(quote.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+          updated: new Date(quote.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+        };
+      });
+      setQuoteJobIds(jobIds);
+      setApiQuotes(quotes.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()));
+    }).catch(() => setApiQuotes([]));
+  }, [currentPersona.key]);
+
+  const quotes = apiQuotes ?? [];
 
   const filtered = activeTab === 'All'
-    ? currentPersona.quotes
-    : currentPersona.quotes.filter((q) => tabFilter[activeTab]?.includes(q.status as StatusType));
+    ? quotes
+    : quotes.filter((q) => tabFilter[activeTab]?.includes(q.status as StatusType));
 
-  const getStatus = (q: typeof currentPersona.quotes[0]): StatusType => {
+  const getStatus = (q: typeof quotes[0]): StatusType => {
     if (approvedIds.has(q.id)) return 'sent';
     return q.status as StatusType;
   };
@@ -39,7 +67,7 @@ export default function QuotesPage() {
       {/* Header */}
       <div>
         <h1 className="text-[20px] sm:text-[22px] font-bold text-[#171817]">Quotes</h1>
-        <p className="text-[12px] text-[#6F716E] mt-0.5">{currentPersona.quotes.length} total quotes · {currentPersona.label}</p>
+        <p className="text-[12px] text-[#6F716E] mt-0.5">{quotes.length} total quotes · {currentPersona.label}</p>
       </div>
 
       {/* Tabs — scrollable on mobile */}
@@ -114,7 +142,12 @@ export default function QuotesPage() {
                           <Icon name="PencilSquareIcon" size={14} />
                         </button>
                         <button
-                          onClick={() => setApprovedIds(prev => new Set([...prev, q.id]))}
+                          onClick={async () => {
+                            const jobId = quoteJobIds[q.id];
+                            if (!jobId) return;
+                            await approveQuote(jobId);
+                            setApprovedIds(prev => new Set([...prev, q.id]));
+                          }}
                           className="p-1.5 rounded-lg hover:bg-[#DDFBEA] text-[#6F716E] hover:text-[#079A4F] transition-all"
                           title="Approve & Send"
                         >
@@ -196,7 +229,12 @@ export default function QuotesPage() {
                           Edit
                         </button>
                         <button
-                          onClick={() => setApprovedIds(prev => new Set([...prev, q.id]))}
+                          onClick={async () => {
+                            const jobId = quoteJobIds[q.id];
+                            if (!jobId) return;
+                            await approveQuote(jobId);
+                            setApprovedIds(prev => new Set([...prev, q.id]));
+                          }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-[#19D66B] text-white text-[12px] font-bold rounded-xl hover:bg-[#079A4F] transition-colors"
                         >
                           <Icon name="CheckCircleIcon" size={13} />

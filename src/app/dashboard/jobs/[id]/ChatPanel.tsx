@@ -5,18 +5,6 @@ import Icon from '@/components/ui/AppIcon';
 import { Message, AuditEvent } from '@/app/dashboard/types';
 import { formatTime } from '@/lib/currency';
 
-// Mock initial messages using canonical Message model (sender + ISO timestamp)
-const initialMessages: Message[] = [
-  { id: '1', sender: 'client', text: "Hi, I need catering for my daughter's wedding. Around 120 guests.", timestamp: '2026-09-01T10:02:00Z' },
-  { id: '2', sender: 'agent',  text: "Absolutely! I'd be happy to help with that. What date is the wedding and where will it be held?", timestamp: '2026-09-01T10:02:30Z' },
-  { id: '3', sender: 'client', text: "It's on Saturday, 15th November in Ikeja. We're looking for a full-service catering package.", timestamp: '2026-09-01T10:04:00Z' },
-  { id: '4', sender: 'agent',  text: "Perfect. Do you have a budget range in mind for the catering?", timestamp: '2026-09-01T10:04:20Z' },
-  { id: '5', sender: 'client', text: "We're thinking around ₦350,000 to ₦400,000.", timestamp: '2026-09-01T10:06:00Z' },
-  { id: '6', sender: 'agent',  text: "Got it. Do you have any dietary preferences or special menu requirements for the guests?", timestamp: '2026-09-01T10:06:15Z' },
-  { id: '7', sender: 'client', text: "Yes, we need a mix of Nigerian and continental dishes. Also some guests are vegetarian.", timestamp: '2026-09-01T10:08:00Z' },
-  { id: '8', sender: 'agent',  text: "Understood. I've captured all the details and I'm preparing a quote for you. I'll have it ready shortly.", timestamp: '2026-09-01T10:08:30Z' },
-];
-
 import { getJob, postMessage } from '@/lib/api';
 
 interface ChatPanelProps {
@@ -26,7 +14,7 @@ interface ChatPanelProps {
 }
 
 export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,7 +28,7 @@ export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
             id: m.message_id || Date.now().toString(),
             sender: m.sender as 'client' | 'agent' | 'sme',
             text: m.text,
-            timestamp: m.timestamp || new Date().toISOString(),
+            timestamp: m.created_at,
           }));
           setMessages(mappedMessages);
         }

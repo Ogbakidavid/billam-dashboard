@@ -2,13 +2,18 @@
 
 import React from 'react';
 import Icon from '@/components/ui/AppIcon';
+import { formatNGN } from '@/lib/currency';
 
 interface ApprovalModalProps {
   onConfirm: () => void;
   onCancel: () => void;
+  clientName: string;
+  eventName: string;
+  total: number;
+  validUntil?: string;
 }
 
-export default function ApprovalModal({ onConfirm, onCancel }: ApprovalModalProps) {
+export default function ApprovalModal({ onConfirm, onCancel, clientName, eventName, total, validUntil = '—' }: ApprovalModalProps) {
   return (
     <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:px-4">
       <div className="absolute inset-0 bg-black/25 backdrop-blur-xs" onClick={onCancel} />
@@ -23,16 +28,16 @@ export default function ApprovalModal({ onConfirm, onCancel }: ApprovalModalProp
 
         <h2 className="text-[17px] font-bold text-[#171817] mb-1">Ready to send?</h2>
         <p className="text-[13px] text-[#6F716E] mb-5">
-          You&apos;re about to send a <span className="font-semibold text-[#171817]">₦507,000</span> quote to Sarah Adeyemi.
+          You&apos;re about to send a <span className="font-semibold text-[#171817]">{formatNGN(total)}</span> quote to {clientName}.
         </p>
 
         {/* Summary */}
         <div className="bg-[#FAFAF9] border border-[#E7E7E3] rounded-[16px] p-4 space-y-2.5 mb-5">
           {[
-            { label: 'Client',      value: 'Sarah Adeyemi' },
-            { label: 'Event',       value: 'Wedding Catering' },
-            { label: 'Total',       value: '₦507,000' },
-            { label: 'Valid until', value: '15 Sep 2026' },
+            { label: 'Client',      value: clientName },
+            { label: 'Event',       value: eventName },
+            { label: 'Total',       value: formatNGN(total) },
+            { label: 'Valid until', value: validUntil },
           ].map((row) => (
             <div key={row.label} className="flex items-center justify-between">
               <span className="text-[12px] text-[#6F716E]">{row.label}</span>

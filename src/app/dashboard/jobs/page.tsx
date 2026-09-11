@@ -28,16 +28,16 @@ function JobsContent() {
   const searchParams = useSearchParams();
   const [activeFilter, setActiveFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [apiJobsList, setApiJobsList] = useState<any[]>([]);
+  const [apiJobsList, setApiJobsList] = useState<any[] | null>(null);
 
   useEffect(() => {
-    getJobs()
+    getJobs(`biz-${currentPersona.key.replace(/_/g, '-')}`)
       .then((res) => {
-        if (res && res.jobs && res.jobs.length > 0) {
+        if (res && res.jobs) {
           const mapped = res.jobs.map((j: ApiJob) => ({
             id: j.job_id,
-            client: j.extracted_fields?.client_name || j.extracted_fields?.event_type || `Job ${j.job_id.slice(0, 6)}`,
-            phone: j.extracted_fields?.client_phone || `+234 80${Math.floor(Math.random() * 90000000 + 10000000)}`,
+            client: j.extracted_fields?.client_name || 'Unknown client',
+            phone: j.extracted_fields?.client_phone || 'No phone recorded',
             job: j.extracted_fields?.event_type || j.business_type,
             service: j.business_type,
             state: j.state as JobState,
@@ -49,10 +49,8 @@ function JobsContent() {
           setApiJobsList(mapped);
         }
       })
-      .catch(() => {
-        // Fallback to local persona state
-      });
-  }, []);
+      .catch(() => setApiJobsList([]));
+  }, [currentPersona.key]);
 
   useEffect(() => {
     const filterParam = searchParams.get('filter');
@@ -64,7 +62,7 @@ function JobsContent() {
     }
   }, [searchParams]);
 
-  const allJobsSource = apiJobsList.length > 0 ? apiJobsList : currentPersona.allJobs;
+  const allJobsSource = apiJobsList ?? [];
 
   const filtered = allJobsSource.filter((job) => {
     const matchesSearch =
@@ -87,7 +85,7 @@ function JobsContent() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[20px] sm:text-[22px] font-bold text-[#171817]">Jobs</h1>
-          <p className="text-[12px] text-[#6F716E] mt-0.5">{currentPersona.allJobs.length} total jobs · {currentPersona.label}</p>
+          <p className="text-[12px] text-[#6F716E] mt-0.5">{allJobsSource.length} total jobs · {currentPersona.label}</p>
         </div>
         <button
           className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#19D66B] text-white text-[13px] font-bold rounded-xl hover:bg-[#079A4F] transition-colors"

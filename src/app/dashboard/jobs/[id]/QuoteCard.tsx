@@ -20,11 +20,13 @@ interface QuoteCardProps {
   onEditQuote?: () => void;
   savedTotal?: number | null;
   line_items?: LineItem[];
+  total?: number;
+  sent?: boolean;
 }
 
-export default function QuoteCard({ onApprove, onEditQuote, savedTotal, line_items = defaultLineItems }: QuoteCardProps) {
+export default function QuoteCard({ onApprove, onEditQuote, savedTotal, line_items = defaultLineItems, total: apiTotal, sent = false }: QuoteCardProps) {
   const calculatedTotal = line_items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-  const total = savedTotal ?? calculatedTotal;
+  const total = savedTotal ?? apiTotal ?? calculatedTotal;
 
   return (
     <div
@@ -34,7 +36,7 @@ export default function QuoteCard({ onApprove, onEditQuote, savedTotal, line_ite
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#E7E7E3] bg-[#FAFAF9]">
         <div>
-          <p className="text-[13px] font-semibold text-[#171817]">Draft Quote</p>
+          <p className="text-[13px] font-semibold text-[#171817]">{sent ? 'Quote' : 'Draft Quote'}</p>
           <p className="text-[11px] text-[#999C98]">Quote ID: Q-250901-001</p>
         </div>
         <div className="flex items-center gap-2">
@@ -46,7 +48,7 @@ export default function QuoteCard({ onApprove, onEditQuote, savedTotal, line_ite
           )}
           <span className="text-[11px] bg-[#DDFBEA] text-[#079A4F] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#19D66B]" />
-            Awaiting Approval
+            {sent ? 'Sent' : 'Awaiting Approval'}
           </span>
         </div>
       </div>
@@ -85,8 +87,8 @@ export default function QuoteCard({ onApprove, onEditQuote, savedTotal, line_ite
       <div className="mx-5 mb-4 bg-[#FAFAF9] border border-[#E7E7E3] rounded-[14px] px-4 py-3 grid grid-cols-2 gap-y-2">
         <div>
           <p className="text-[10px] text-[#999C98] uppercase tracking-wider font-semibold">Status</p>
-          <span className="text-[11px] bg-[#DDFBEA] text-[#079A4F] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 mt-0.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#19D66B]" />Awaiting Approval
+            <span className="text-[11px] bg-[#DDFBEA] text-[#079A4F] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#19D66B]" />{sent ? 'Sent' : 'Awaiting Approval'}
           </span>
         </div>
         <div>
@@ -101,21 +103,30 @@ export default function QuoteCard({ onApprove, onEditQuote, savedTotal, line_ite
 
       {/* Actions */}
       <div className="flex items-center gap-3 px-5 py-4 border-t border-[#E7E7E3] bg-[#FAFAF9]">
-        <button
-          onClick={onEditQuote}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E7E7E3] bg-white text-[#171817] text-[13px] font-semibold rounded-xl hover:bg-[#F0F0EE] transition-colors"
-        >
-          <Icon name="PencilSquareIcon" size={14} />
-          Edit Quote
-        </button>
-        <button
-          onClick={onApprove}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#19D66B] text-white text-[13px] font-bold rounded-xl hover:bg-[#079A4F] transition-colors"
-          style={{ boxShadow: '0 0 0 1px rgba(25,214,107,0.2), 0 4px 24px rgba(25,214,107,0.15)' }}
-        >
-          <Icon name="CheckCircleIcon" size={14} />
-          Approve &amp; Send
-        </button>
+        {sent ? (
+          <div className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#DDFBEA] text-[#079A4F] text-[13px] font-bold rounded-xl">
+            <Icon name="CheckCircleIcon" size={14} />
+            Quote sent to client
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={onEditQuote}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E7E7E3] bg-white text-[#171817] text-[13px] font-semibold rounded-xl hover:bg-[#F0F0EE] transition-colors"
+            >
+              <Icon name="PencilSquareIcon" size={14} />
+              Edit Quote
+            </button>
+            <button
+              onClick={onApprove}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#19D66B] text-white text-[13px] font-bold rounded-xl hover:bg-[#079A4F] transition-colors"
+              style={{ boxShadow: '0 0 0 1px rgba(25,214,107,0.2), 0 4px 24px rgba(25,214,107,0.15)' }}
+            >
+              <Icon name="CheckCircleIcon" size={14} />
+              Approve &amp; Send
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

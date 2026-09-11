@@ -59,6 +59,7 @@ export interface ApiJob {
     subtotal: number;
     total: number;
     status: string;
+    validity_days: number;
     created_at: string;
     updated_at: string;
   } | null;
@@ -86,11 +87,17 @@ export async function getJob(jobId: string): Promise<ApiJob> {
   return fetchApi<ApiJob>(`/jobs/${jobId}`);
 }
 
+export interface ApprovalResult {
+  job_id: string;
+  state: string;
+  quote_status: string;
+  sent_at: string;
+}
+
 /** Create a new job */
 export async function createJob(payload: {
   business_id: string;
   business_type: string;
-  client_message: string;
 }): Promise<ApiJob> {
   return fetchApi<ApiJob>('/jobs', {
     method: 'POST',
@@ -120,17 +127,18 @@ export async function editQuote(
     line_items?: Array<{ id: string; name: string; quantity: number; unit_price: number; total: number }>;
     contingencies?: Array<{ id: string; label: string; rate: number | null; amount: number }>;
   }
-): Promise<{ quote: ApiJob['quote'] }> {
-  return fetchApi<{ quote: ApiJob['quote'] }>(`/jobs/${jobId}/quote`, {
+): Promise<{ job_id: string; state: string; quote: { status: string; total: number } }> {
+  return fetchApi<{ job_id: string; state: string; quote: { status: string; total: number } }>(`/jobs/${jobId}/quote`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }
 
 /** Approve quote */
-export async function approveQuote(jobId: string): Promise<ApiJob> {
-  return fetchApi<ApiJob>(`/jobs/${jobId}/approve_quote`, {
+export async function approveQuote(jobId: string): Promise<ApprovalResult> {
+  return fetchApi<ApprovalResult>(`/jobs/${jobId}/approve_quote`, {
     method: 'POST',
+    body: JSON.stringify({ approved_by: 'dashboard_sme' }),
   });
 }
 
@@ -146,8 +154,8 @@ export async function submitManualInput(
 }
 
 /** Retry failed job */
-export async function retryJob(jobId: string): Promise<ApiJob> {
-  return fetchApi<ApiJob>(`/jobs/${jobId}/retry`, {
+export async function retryJob(jobId: string): Promise<{ job_id: string; state: string; retry_started: boolean }> {
+  return fetchApi<{ job_id: string; state: string; retry_started: boolean }>(`/jobs/${jobId}/retry`, {
     method: 'POST',
   });
 }
@@ -254,4 +262,3 @@ export async function checkAvailability(
     `/availability/check?business_id=${businessId}&date=${date}`
   );
 }
-

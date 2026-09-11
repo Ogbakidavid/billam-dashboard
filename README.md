@@ -1,91 +1,65 @@
-# Next.js
+# BillAm Dashboard
 
-A modern Next.js 15 application built with TypeScript and Tailwind CSS.
+BillAm Dashboard is the Next.js frontend for the BillAm Agent workflow. It gives an SME owner a live view of jobs, client conversations, generated quotes, approvals, activity, and notes.
 
-## 🚀 Features
+## Connected workflow
 
-- **Next.js 15** - Latest version with improved performance and features
-- **React 19** - Latest React version with enhanced capabilities
-- **Tailwind CSS** - Utility-first CSS framework for rapid UI development
+The dashboard is API-backed for operational data. It connects to the BillAm Agent backend through `NEXT_PUBLIC_API_URL` (default: `http://localhost:3001`). The development frontend runs on `http://localhost:4028`.
 
-## 🛠️ Installation
+The main testing path is:
 
-1. Install dependencies:
-  ```bash
-  npm install
-  # or
-  yarn install
-  ```
+1. Open `/dashboard/chat` and choose a client persona.
+2. Send a client brief to create/process a job.
+3. Watch the agent response and open the generated job from `/dashboard/jobs`.
+4. Review the structured brief and quote.
+5. Edit the quote if needed, then approve and send it.
+6. Confirm the job becomes `Executed`, the quote becomes `sent`, and the quote appears in the client conversation and quotes dashboard.
 
-2. Start the development server:
-  ```bash
-  npm run dev
-  # or
-  yarn dev
-  ```
-3. Open [http://localhost:4028](http://localhost:4028) with your browser to see the result.
+Generated jobs receive a random client name and phone number when the backend request does not provide identity data. Job and quote tables sort the newest activity first.
 
-## 📁 Project Structure
+## Stack
 
-```
-nextjs/
-├── public/             # Static assets
-├── src/
-│   ├── app/            # App router components
-│   │   ├── layout.tsx  # Root layout component
-│   │   └── page.tsx    # Main page component
-│   ├── components/     # Reusable UI components
-│   ├── styles/         # Global styles and Tailwind configuration
-├── next.config.mjs     # Next.js configuration
-├── package.json        # Project dependencies and scripts
-├── postcss.config.js   # PostCSS configuration
-└── tailwind.config.js  # Tailwind CSS configuration
+- Next.js 15, React 19, TypeScript
+- Tailwind CSS and Lucide icons
+- Recharts for dashboard activity visualisation
+- Native `fetch` API client in `src/lib/api.ts`
 
+## Getting started
+
+Start the backend first, then run the dashboard:
+
+```bash
+npm install
+npm run dev
 ```
 
-## 🧩 Page Editing
+Open [http://localhost:4028](http://localhost:4028).
 
-You can start editing the page by modifying `src/app/page.tsx`. The page auto-updates as you edit the file.
+To use another backend URL, set it in `.env.local`:
 
-## 🎨 Styling
+```text
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
 
-This project uses Tailwind CSS for styling with the following features:
-- Utility-first approach for rapid development
-- Custom theme configuration
-- Responsive design utilities
-- PostCSS and Autoprefixer integration
+## Useful routes
 
-## 📦 Available Scripts
+- `/dashboard` — overview and recent jobs
+- `/dashboard/chat` — client-side chat simulator
+- `/dashboard/jobs` — API-backed job list
+- `/dashboard/jobs/:id` — chat, brief, quote, activity, and notes for one job
+- `/dashboard/quotes` — API-backed quote list and approval actions
 
-- `npm run dev` - Start development server on port 4028
-- `npm run build` - Build the application for production
-- `npm run start` - Start the development server
-- `npm run serve` - Start the production server
-- `npm run lint` - Run ESLint to check code quality
-- `npm run lint:fix` - Fix ESLint issues automatically
-- `npm run format` - Format code with Prettier
+## Checks
 
-## 📱 Deployment
+```bash
+npm run type-check
+npm run build
+```
 
-Build the application for production:
+The production build may require network access if Next.js needs to download remote fonts. Type checking does not require that network request.
 
-  ```bash
-  npm run build
-  ```
+## Intentional demo areas
 
-## 📚 Learn More
+The marketing/landing pages and a few editor/settings surfaces contain presentation fixtures or local-only interactions. They are intentionally outside the live job/quote workflow. Operational job, chat, quote, approval, identity, amount, and status data should come from the backend API.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial
-
-You can check out the [Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## 🙏 Acknowledgments
-
-- Built with [Rocket.new](https://rocket.new)
-- Powered by Next.js and React
-- Styled with Tailwind CSS
-
-Built with ❤️ on Rocket.new
+See [`testing.md`](./testing.md) for the current end-to-end test scenarios.

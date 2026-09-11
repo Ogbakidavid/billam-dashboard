@@ -356,21 +356,20 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
         
         const staticMeta = personaData[currentKey];
         
-        const allJobs: Job[] = jobs.map(j => ({
+        const jobsByUpdated = [...jobs].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        const allJobs: Job[] = jobsByUpdated.map(j => ({
           id: j.job_id,
           client: j.extracted_fields?.client_name || 'Unknown Client',
           phone: j.extracted_fields?.client_phone || 'N/A',
           job: j.extracted_fields?.event_type || 'Unknown Event',
           service: j.extracted_fields?.event_type || 'General Service',
           state: j.state as JobState,
-          amount: Number(j.extracted_fields?.amount || 0),
+          amount: j.quote?.total ?? Number(j.extracted_fields?.amount || 0),
           lastActivity: new Date(j.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
           updated: new Date(j.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
         }));
 
-        const sortedJobs = [...allJobs].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
-        
-        const recentJobs: RecentJob[] = sortedJobs.slice(0, 4).map(j => ({
+        const recentJobs: RecentJob[] = allJobs.slice(0, 4).map(j => ({
           id: j.id,
           client: j.client,
           job: j.job,
@@ -379,7 +378,7 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
           updated: j.lastActivity,
         }));
 
-        const attentionItems: AttentionItem[] = jobs
+        const attentionItems: AttentionItem[] = jobsByUpdated
           .filter(j => ['NEEDS_SME_INPUT', 'AWAITING_HUMAN_APPROVAL', 'FAILED_RETRY', 'CLARIFYING'].includes(j.state))
           .map(j => {
             let action = 'View';
@@ -394,13 +393,13 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
               summary: j.extracted_fields?.venue_location || 'No location',
               detail: j.error_message || (j.missing_required_fields?.length ? `Missing: ${j.missing_required_fields.join(', ')}` : 'Requires attention'),
               state: j.state as JobState,
-              amount: Number(j.extracted_fields?.amount || 0),
+              amount: j.quote?.total ?? Number(j.extracted_fields?.amount || 0),
               lastActivity: new Date(j.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
               action,
             };
           });
 
-        const quotes: Quote[] = jobs.filter(j => j.quote).map(j => ({
+        const quotes: Quote[] = jobsByUpdated.filter(j => j.quote).map(j => ({
           id: j.quote!.id,
           client: j.extracted_fields?.client_name || 'Unknown Client',
           event: j.extracted_fields?.event_type || 'Unknown Event',

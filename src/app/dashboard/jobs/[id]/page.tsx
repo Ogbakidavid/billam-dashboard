@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
@@ -12,10 +12,9 @@ import ApprovalModal from './ApprovalModal';
 import QuoteEditor from '@/app/dashboard/components/QuoteEditor';
 import JobEditor from '@/app/dashboard/components/JobEditor';
 import { ResolveModal, ReviewIssueModal } from '@/app/dashboard/components/WorkflowModals';
-import { usePersona } from '@/app/dashboard/context/PersonaContext';
 import { JobState, AuditEvent } from '@/app/dashboard/types';
 import { formatTime } from '@/lib/currency';
-import { approveQuote, retryJob, submitManualInput } from '@/lib/api';
+import { approveQuote, getJob, ApiJob } from '@/lib/api';
 
 type TabType = 'chat' | 'brief' | 'quote' | 'activity' | 'notes' | 'files';
 
@@ -41,17 +40,24 @@ const typeColor: Record<string, string> = {
 export default function JobDetailPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { currentPersona } = usePersona();
+  const [apiJob, setApiJob] = useState<ApiJob | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const personaJob = currentPersona.allJobs.find((j: { id: string }) => j.id === id) || currentPersona.allJobs[0];
+  useEffect(() => {
+    if (!id) return;
+    getJob(id).then(setApiJob).catch((error: unknown) => {
+      setLoadError(error instanceof Error ? error.message : 'Unable to load this job');
+    });
+  }, [id]);
+
+  const fields = apiJob?.extracted_fields ?? {};
   const job = {
-    client: personaJob?.client || 'Adaeze Okonkwo',
-    job: personaJob?.job || 'Wedding Decoration',
-    status: (personaJob?.state || 'AWAITING_HUMAN_APPROVAL') as JobState,
-    jobId: `JOB-250901-${id?.slice(-4) || '0001'}`,
-    created: '01 Sep 2026 10:30 AM',
-    location: personaJob?.job?.includes('Lekki') ? 'Lekki' : 'Victoria Island',
-    service: personaJob?.service || 'Full Venue Decoration',
+    client: fields.client_name || fields.event_type || 'Client enquiry',
+    job: fields.event_type || apiJob?.business_type || 'New enquiry',
+    status: (apiJob?.state || 'REASONING') as JobState,
+    jobId: apiJob?.job_id || id,
+    created: apiJob ? new Date(apiJob.created_at).toLocaleString() : 'Loading…',
+    service: apiJob?.business_type || 'General service',
   };
 
   const [activeTab, setActiveTab] = useState<TabType>('quote');
@@ -72,7 +78,13 @@ export default function JobDetailPage() {
     setExtraActivity(prev => [...prev, event]);
   };
 
-  const allActivity = [...activityLog, ...extraActivity];
+  const allActivity = [...(apiJob?.audit_events as AuditEvent[] || []), ...extraActivity];
+  const briefFields = Object.entries(fields).map(([key, value]) => ({
+    key,
+    label: key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()),
+    value: String(value),
+    status: 'confirmed' as const,
+  }));
 
   const handleApprove = async () => {
     setShowApproval(false);
@@ -99,6 +111,13 @@ export default function JobDetailPage() {
   const effectiveStatus: JobState = approved ? 'EXECUTED' : resolved ? 'REASONING' : retried ? 'REASONING' : job.status as JobState;
   const displayClient = savedJobData?.client || job.client;
   const displayJob = savedJobData?.eventType || job.job;
+  const validUntil = apiJob?.quote
+    ? new Date(new Date(apiJob.quote.created_at).getTime() + apiJob.quote.validity_days * 86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '—';
+
+  if (loadError) {
+    return <div className="p-6 text-sm text-red-600">Could not load this job: {loadError}</div>;
+  }
 
   // Desktop bottom tabs (quote/activity/notes/files)
   const bottomTabs: { key: TabType; label: string }[] = [
@@ -208,7 +227,7 @@ export default function JobDetailPage() {
           <ChatPanel jobId={id} onSmeMessage={handleSmeMessage} />
         </div>
         <div className="overflow-y-auto max-h-[520px] pr-1">
-          <BriefPanel />
+          <BriefPanel extracted_fields={briefFields} missing_fields={apiJob?.missing_required_fields ?? []} audit_events={allActivity} />
         </div>
       </div>
 
@@ -240,13 +259,16 @@ export default function JobDetailPage() {
           </div>
         )}
         {activeTab === 'brief' && (
-          <BriefPanel />
+          <BriefPanel extracted_fields={briefFields} missing_fields={apiJob?.missing_required_fields ?? []} audit_events={allActivity} />
         )}
         {activeTab === 'quote' && (
           <QuoteCard
             onApprove={() => setShowApproval(true)}
             onEditQuote={() => setShowQuoteEditor(true)}
             savedTotal={savedQuoteTotal}
+            line_items={apiJob?.quote?.line_items ?? []}
+            total={apiJob?.quote?.total}
+            sent={effectiveStatus === 'EXECUTED' || apiJob?.quote?.status === 'sent'}
           />
         )}
         {activeTab === 'activity' && (
@@ -319,6 +341,9 @@ export default function JobDetailPage() {
               onApprove={() => setShowApproval(true)}
               onEditQuote={() => setShowQuoteEditor(true)}
               savedTotal={savedQuoteTotal}
+              line_items={apiJob?.quote?.line_items ?? []}
+              total={apiJob?.quote?.total}
+              sent={effectiveStatus === 'EXECUTED' || apiJob?.quote?.status === 'sent'}
             />
           )}
           {activeTab === 'activity' && (
@@ -362,7 +387,14 @@ export default function JobDetailPage() {
 
       {/* ── Modals ── */}
       {showApproval && (
-        <ApprovalModal onConfirm={handleApprove} onCancel={() => setShowApproval(false)} />
+        <ApprovalModal
+          onConfirm={handleApprove}
+          onCancel={() => setShowApproval(false)}
+          clientName={displayClient}
+          eventName={displayJob}
+          total={apiJob?.quote?.total ?? savedQuoteTotal ?? 0}
+          validUntil={validUntil}
+        />
       )}
       {showQuoteEditor && (
         <QuoteEditor
