@@ -7,33 +7,33 @@ import { formatTime } from '@/lib/currency';
 
 // ── Default mock data using canonical BriefFieldEntry structure ────────────────
 const defaultExtractedFields: BriefFieldEntry[] = [
-  { key: 'event_type',      label: 'Event Type',       value: 'Wedding reception',                          status: 'confirmed' },
-  { key: 'event_date',      label: 'Date',             value: '15 November 2026',                           status: 'confirmed' },
-  { key: 'venue_location',  label: 'Venue',            value: 'The Providence, Ikeja',                      status: 'confirmed' },
-  { key: 'guest_count',     label: 'Guests',           value: '120',                                        status: 'confirmed' },
-  { key: 'service',         label: 'Service',          value: 'Full-service catering',                      status: 'confirmed' },
-  { key: 'budget_range',    label: 'Budget',           value: '₦350,000 (approx)',                          status: 'warning' },
-  { key: 'catering_pref',   label: 'Catering',         value: 'Nigerian + continental, vegetarian options', status: 'confirmed' },
-  { key: 'special_req',     label: 'Special Requests', value: 'Décor & Setup',                              status: 'confirmed' },
+  { key: 'event_type', label: 'Event Type', value: 'Wedding reception', status: 'confirmed' },
+  { key: 'event_date', label: 'Date', value: '15 November 2026', status: 'confirmed' },
+  { key: 'venue_location', label: 'Venue', value: 'The Providence, Ikeja', status: 'confirmed' },
+  { key: 'guest_count', label: 'Guests', value: '120', status: 'confirmed' },
+  { key: 'service', label: 'Service', value: 'Full-service catering', status: 'confirmed' },
+  { key: 'budget_range', label: 'Budget', value: '₦350,000 (approx)', status: 'warning' },
+  { key: 'catering_pref', label: 'Catering', value: 'Nigerian + continental, vegetarian options', status: 'confirmed' },
+  { key: 'special_req', label: 'Special Requests', value: 'Décor & Setup', status: 'confirmed' },
 ];
 
 const defaultMissingFields: string[] = [];
 
 // ── Default mock audit events using canonical AuditEvent structure ─────────────
 const defaultAuditEvents: AuditEvent[] = [
-  { id: 'ae-1', type: 'client', label: 'Client message received',  timestamp: '2026-09-01T10:30:00Z' },
-  { id: 'ae-2', type: 'agent',  label: 'Brief updated',            timestamp: '2026-09-01T10:31:00Z' },
-  { id: 'ae-3', type: 'agent',  label: 'Clarification generated',  timestamp: '2026-09-01T10:31:10Z' },
-  { id: 'ae-4', type: 'agent',  label: 'Clarification sent',       timestamp: '2026-09-01T10:31:20Z' },
+  { id: 'ae-1', type: 'client', label: 'Client message received', timestamp: '2026-09-01T10:30:00Z' },
+  { id: 'ae-2', type: 'agent', label: 'Brief updated', timestamp: '2026-09-01T10:31:00Z' },
+  { id: 'ae-3', type: 'agent', label: 'Clarification generated', timestamp: '2026-09-01T10:31:10Z' },
+  { id: 'ae-4', type: 'agent', label: 'Clarification sent', timestamp: '2026-09-01T10:31:20Z' },
   { id: 'ae-5', type: 'client', label: 'Client response received', timestamp: '2026-09-01T10:32:00Z' },
-  { id: 'ae-6', type: 'agent',  label: 'Quote generated',          timestamp: '2026-09-01T10:35:00Z' },
-  { id: 'ae-7', type: 'sme',    label: 'Awaiting your approval',   timestamp: '' },
+  { id: 'ae-6', type: 'agent', label: 'Quote generated', timestamp: '2026-09-01T10:35:00Z' },
+  { id: 'ae-7', type: 'sme', label: 'Awaiting your approval', timestamp: '' },
 ];
 
 const statusIcon: Record<string, { icon: string; color: string }> = {
   confirmed: { icon: 'CheckCircleIcon', color: 'text-[#19D66B]' },
-  warning:   { icon: 'ExclamationCircleIcon', color: 'text-amber-500' },
-  missing:   { icon: 'XCircleIcon', color: 'text-red-400' },
+  warning: { icon: 'ExclamationCircleIcon', color: 'text-amber-500' },
+  missing: { icon: 'XCircleIcon', color: 'text-red-400' },
 };
 
 const Card = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -57,14 +57,21 @@ export default function BriefPanel({
   audit_events = defaultAuditEvents,
 }: BriefPanelProps) {
   // Combine extracted fields with missing fields for display
+  // Some fields (like a partial date) can be BOTH present in extracted_fields
+  // AND still listed in missing_fields, since they have a value but it's
+  // genuinely incomplete. Don't duplicate those — skip any missing_fields
+  // key that already has a real entry from extracted_fields.
+  const extractedKeys = new Set(extracted_fields.map((f) => f.key));
   const allFields: BriefFieldEntry[] = [
     ...extracted_fields,
-    ...missing_fields.map((key) => ({
-      key,
-      label: key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-      value: 'Missing',
-      status: 'missing' as const,
-    })),
+    ...missing_fields
+      .filter((key) => !extractedKeys.has(key))
+      .map((key) => ({
+        key,
+        label: key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        value: 'Missing',
+        status: 'missing' as const,
+      })),
   ];
 
   return (
@@ -128,25 +135,23 @@ export default function BriefPanel({
         <div className="px-4 py-3 space-y-2.5">
           {audit_events.map((event, i) => {
             const isActive = !event.timestamp;
-            const isDone   = !!event.timestamp;
-            const isLast   = i === audit_events.length - 1;
+            const isDone = !!event.timestamp;
+            const isLast = i === audit_events.length - 1;
             return (
               <div key={event.id} className="flex items-center gap-3">
                 <span className="text-[11px] text-[#999C98] w-16 shrink-0">
                   {event.timestamp ? formatTime(event.timestamp) : '—'}
                 </span>
-                <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 ${
-                  isDone && !isLast ? 'bg-[#19D66B]' : isActive || isLast ? 'bg-amber-400' : 'bg-[#E7E7E3]'
-                }`}>
+                <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 ${isDone && !isLast ? 'bg-[#19D66B]' : isActive || isLast ? 'bg-amber-400' : 'bg-[#E7E7E3]'
+                  }`}>
                   {isDone && !isLast ? (
                     <Icon name="CheckIcon" size={8} className="text-white" variant="solid" />
                   ) : (isActive || isLast) ? (
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                   ) : null}
                 </div>
-                <span className={`text-[12px] ${
-                  isDone && !isLast ? 'text-[#171817]' : (isActive || isLast) ? 'text-amber-600 font-semibold' : 'text-[#999C98]'
-                }`}>
+                <span className={`text-[12px] ${isDone && !isLast ? 'text-[#171817]' : (isActive || isLast) ? 'text-amber-600 font-semibold' : 'text-[#999C98]'
+                  }`}>
                   {event.label}
                 </span>
               </div>
