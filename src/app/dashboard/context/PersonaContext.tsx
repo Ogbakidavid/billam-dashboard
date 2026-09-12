@@ -355,14 +355,36 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
         const { jobs } = await getJobs(businessId);
         
         const staticMeta = personaData[currentKey];
+
+        const businessTypeLabels: Record<string, string> = {
+          event_vendor: 'Event service request',
+          caterer: 'Catering request',
+          tailor: 'Tailoring request',
+          photographer: 'Photography request',
+          event_planner: 'Event planning request',
+          equipment_rental: 'Equipment rental request',
+        };
+
+        const getJobLabel = (job: (typeof jobs)[number]) =>
+          job.extracted_fields?.event_type || businessTypeLabels[job.business_type] || 'Client request';
+
+        const getAttentionDetail = (job: (typeof jobs)[number]) => {
+          if (job.state === 'FAILED_RETRY') {
+            return 'Agent processing could not be completed. Review the issue and retry.';
+          }
+          if (job.missing_required_fields?.length) {
+            return `Missing: ${job.missing_required_fields.join(', ')}`;
+          }
+          return 'Requires attention';
+        };
         
         const jobsByUpdated = [...jobs].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
         const allJobs: Job[] = jobsByUpdated.map(j => ({
           id: j.job_id,
           client: j.extracted_fields?.client_name || 'Unknown Client',
           phone: j.extracted_fields?.client_phone || 'N/A',
-          job: j.extracted_fields?.event_type || 'Unknown Event',
-          service: j.extracted_fields?.event_type || 'General Service',
+          job: getJobLabel(j),
+          service: j.extracted_fields?.event_type || businessTypeLabels[j.business_type] || 'General Service',
           state: j.state as JobState,
           amount: j.quote?.total ?? Number(j.extracted_fields?.amount || 0),
           lastActivity: new Date(j.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
@@ -389,9 +411,9 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
             return {
               id: j.job_id,
               client: j.extracted_fields?.client_name || 'Unknown Client',
-              job: j.extracted_fields?.event_type || 'Unknown Event',
-              summary: j.extracted_fields?.venue_location || 'No location',
-              detail: j.error_message || (j.missing_required_fields?.length ? `Missing: ${j.missing_required_fields.join(', ')}` : 'Requires attention'),
+              job: getJobLabel(j),
+              summary: j.extracted_fields?.venue_location || 'Location not captured',
+              detail: getAttentionDetail(j),
               state: j.state as JobState,
               amount: j.quote?.total ?? Number(j.extracted_fields?.amount || 0),
               lastActivity: new Date(j.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),

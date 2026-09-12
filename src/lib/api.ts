@@ -231,12 +231,13 @@ export async function deleteKnowledgeSource(id: string): Promise<{ success: bool
 // ==========================================
 
 export interface ApiAvailabilityDate {
-  id: string;
+  availability_date_id: string;
   business_id: string;
   date: string;
-  status: 'available' | 'booked' | 'blocked';
+  status: 'UNAVAILABLE' | 'BOOKED';
   reason?: string;
   created_at: string;
+  updated_at: string;
 }
 
 export async function getAvailabilityDates(businessId: string): Promise<ApiAvailabilityDate[]> {
@@ -246,7 +247,7 @@ export async function getAvailabilityDates(businessId: string): Promise<ApiAvail
 export async function createAvailabilityDate(payload: {
   business_id: string;
   date: string;
-  status: 'available' | 'booked' | 'blocked';
+  status: 'UNAVAILABLE' | 'BOOKED';
   reason?: string;
 }): Promise<ApiAvailabilityDate> {
   return fetchApi<ApiAvailabilityDate>('/availability', {
@@ -257,7 +258,7 @@ export async function createAvailabilityDate(payload: {
 
 export async function updateAvailabilityDate(
   id: string,
-  payload: Partial<ApiAvailabilityDate>
+  payload: { status?: ApiAvailabilityDate['status']; reason?: string }
 ): Promise<ApiAvailabilityDate> {
   return fetchApi<ApiAvailabilityDate>(`/availability/${id}`, {
     method: 'PATCH',

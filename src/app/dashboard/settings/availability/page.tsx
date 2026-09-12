@@ -222,10 +222,11 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 interface BlockDateModalProps {
   onClose: () => void;
   onBlock: (date: string, status: DateStatus, reason?: string) => void;
+  initialDate?: string | null;
 }
 
-function BlockDateModal({ onClose, onBlock }: BlockDateModalProps) {
-  const [date, setDate] = useState('');
+function BlockDateModal({ onClose, onBlock, initialDate }: BlockDateModalProps) {
+  const [date, setDate] = useState(initialDate ?? '');
   const [status, setStatus] = useState<DateStatus>('UNAVAILABLE');
   const [reason, setReason] = useState('');
   const [customReason, setCustomReason] = useState('');
@@ -255,9 +256,9 @@ function BlockDateModal({ onClose, onBlock }: BlockDateModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E7E7E3]">
           <div>
-            <h3 className="text-[15px] font-bold text-[#171817]">Block a date</h3>
+            <h3 className="text-[15px] font-bold text-[#171817]">Set date status</h3>
             <p className="text-[12px] text-[#6F716E] mt-0.5">
-              BillAm will avoid taking enquiries for this date.
+              BillAm will avoid taking enquiries for booked or unavailable dates.
             </p>
           </div>
           <button
@@ -344,7 +345,7 @@ function BlockDateModal({ onClose, onBlock }: BlockDateModalProps) {
             className="px-4 py-2 text-[13px] font-semibold text-white bg-[#19D66B] rounded-xl hover:bg-[#079A4F] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             style={{ boxShadow: canSubmit ? '0 0 0 1px rgba(25,214,107,0.2), 0 4px 24px rgba(25,214,107,0.15)' : undefined }}
           >
-            Block date
+            {status === 'BOOKED' ? 'Book date' : 'Mark unavailable'}
           </button>
         </div>
       </div>
@@ -553,13 +554,13 @@ export default function AvailabilityPage() {
     try {
       const data = await getAvailabilityDates(businessId);
       setDates(data.map(d => ({
-        availabilityDateId: d.id,
+        availabilityDateId: d.availability_date_id,
         businessId: d.business_id,
         date: d.date,
-        status: d.status === 'booked' ? 'BOOKED' : 'UNAVAILABLE',
+        status: d.status,
         reason: d.reason,
         createdAt: d.created_at,
-        updatedAt: d.created_at,
+        updatedAt: d.updated_at,
       })));
       setLoadState('loaded');
     } catch (err) {
@@ -598,7 +599,7 @@ export default function AvailabilityPage() {
   const handleBlock = async (date: string, status: DateStatus, reason?: string) => {
     try {
       const existing = dates.find((d) => d.date === date);
-      const apiStatus = status === 'BOOKED' ? 'booked' : 'blocked';
+      const apiStatus = status;
       
       if (existing) {
         // Update existing
@@ -621,13 +622,13 @@ export default function AvailabilityPage() {
           reason,
         });
         const newEntry: AvailabilityDate = {
-          availabilityDateId: newApiEntry.id,
+          availabilityDateId: newApiEntry.availability_date_id,
           businessId: newApiEntry.business_id,
           date: newApiEntry.date,
-          status: newApiEntry.status === 'booked' ? 'BOOKED' : 'UNAVAILABLE',
+          status: newApiEntry.status,
           reason: newApiEntry.reason,
           createdAt: newApiEntry.created_at,
-          updatedAt: newApiEntry.created_at,
+          updatedAt: newApiEntry.updated_at,
         };
         setDates((prev) => [...prev, newEntry].sort((a, b) => a.date.localeCompare(b.date)));
       }
@@ -741,21 +742,21 @@ export default function AvailabilityPage() {
                     className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold text-[#19D66B] bg-white border border-[#19D66B]/30 rounded-xl hover:bg-[#DDFBEA] transition-colors shrink-0"
                   >
                     <Icon name="PlusIcon" size={13} />
-                    Block
+                    Set status
                   </button>
                 </div>
               )}
             </Card>
 
-            {/* Unavailable dates list */}
+            {/* Availability dates list */}
             <Card>
               <div className="px-5 py-4 border-b border-[#E7E7E3] flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-[14px] font-semibold text-[#171817]">Unavailable dates</h3>
+                  <h3 className="text-[14px] font-semibold text-[#171817]">Availability dates</h3>
                   <p className="text-[12px] text-[#6F716E] mt-0.5">
                     {sortedDates.length === 0
                       ? 'No blocked dates'
-                      : `${sortedDates.length} date${sortedDates.length !== 1 ? 's' : ''} blocked`}
+                      : `${sortedDates.length} date${sortedDates.length !== 1 ? 's' : ''} marked`}
                   </p>
                 </div>
                 <button
@@ -763,7 +764,7 @@ export default function AvailabilityPage() {
                   className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold text-[#19D66B] bg-[#F0FFF6] border border-[#19D66B]/20 rounded-xl hover:bg-[#DDFBEA] transition-colors shrink-0"
                 >
                   <Icon name="PlusIcon" size={14} />
-                  Block a date
+                  Add date status
                 </button>
               </div>
 
@@ -783,7 +784,7 @@ export default function AvailabilityPage() {
                     style={{ boxShadow: '0 0 0 1px rgba(25,214,107,0.2), 0 4px 24px rgba(25,214,107,0.15)' }}
                   >
                     <Icon name="PlusIcon" size={14} />
-                    Block a date
+                    Add date status
                   </button>
                 </div>
               ) : (
@@ -859,6 +860,7 @@ export default function AvailabilityPage() {
         <BlockDateModal
           onClose={() => setShowModal(false)}
           onBlock={handleBlock}
+          initialDate={selectedDate}
         />
       )}
     </>
