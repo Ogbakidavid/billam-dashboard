@@ -59,7 +59,10 @@ export interface ApiJob {
     subtotal: number;
     total: number;
     status: string;
+    currency?: string;
     validity_days: number;
+    payment_terms?: string;
+    assumptions?: string[];
     created_at: string;
     updated_at: string;
   } | null;
@@ -124,14 +127,23 @@ export async function postMessage(
 export async function editQuote(
   jobId: string,
   payload: {
-    line_items?: Array<{ id: string; name: string; quantity: number; unit_price: number; total: number }>;
+    line_items?: Array<{
+      id: string;
+      name: string;
+      quantity: number;
+      unit_price: number;
+      total: number;
+    }>;
     contingencies?: Array<{ id: string; label: string; rate: number | null; amount: number }>;
   }
 ): Promise<{ job_id: string; state: string; quote: { status: string; total: number } }> {
-  return fetchApi<{ job_id: string; state: string; quote: { status: string; total: number } }>(`/jobs/${jobId}/quote`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  });
+  return fetchApi<{ job_id: string; state: string; quote: { status: string; total: number } }>(
+    `/jobs/${jobId}/quote`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }
+  );
 }
 
 /** Approve quote */
@@ -154,10 +166,15 @@ export async function submitManualInput(
 }
 
 /** Retry failed job */
-export async function retryJob(jobId: string): Promise<{ job_id: string; state: string; retry_started: boolean }> {
-  return fetchApi<{ job_id: string; state: string; retry_started: boolean }>(`/jobs/${jobId}/retry`, {
-    method: 'POST',
-  });
+export async function retryJob(
+  jobId: string
+): Promise<{ job_id: string; state: string; retry_started: boolean }> {
+  return fetchApi<{ job_id: string; state: string; retry_started: boolean }>(
+    `/jobs/${jobId}/retry`,
+    {
+      method: 'POST',
+    }
+  );
 }
 
 // ==========================================

@@ -12,9 +12,9 @@ import ApprovalModal from './ApprovalModal';
 import QuoteEditor from '@/app/dashboard/components/QuoteEditor';
 import JobEditor from '@/app/dashboard/components/JobEditor';
 import { ResolveModal, ReviewIssueModal } from '@/app/dashboard/components/WorkflowModals';
-import { JobState, AuditEvent } from '@/app/dashboard/types';
+import { JobState, AuditEvent, Contingency, LineItem } from '@/app/dashboard/types';
 import { formatTime } from '@/lib/currency';
-import { approveQuote, getJob, ApiJob } from '@/lib/api';
+import { approveQuote, editQuote, getJob, ApiJob } from '@/lib/api';
 
 type TabType = 'chat' | 'brief' | 'quote' | 'activity' | 'notes' | 'files';
 
@@ -98,9 +98,24 @@ export default function JobDetailPage() {
     }
   };
 
-  const handleQuoteSave = (total: number) => {
-    setSavedQuoteTotal(total);
-    setShowQuoteEditor(false);
+  const handleQuoteSave = async (payload: {
+    line_items: LineItem[];
+    contingencies: Contingency[];
+    subtotal: number;
+    total: number;
+  }) => {
+    if (!id) return;
+    try {
+      await editQuote(id, {
+        line_items: payload.line_items,
+        contingencies: payload.contingencies,
+      });
+      setApiJob(await getJob(id));
+      setSavedQuoteTotal(payload.total);
+      setShowQuoteEditor(false);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Unable to save quote changes');
+    }
   };
 
   const handleJobSave = (data: {client?: string; eventType?: string}) => {
@@ -400,6 +415,8 @@ export default function JobDetailPage() {
         <QuoteEditor
           clientName={displayClient}
           eventName={displayJob}
+          initialItems={apiJob?.quote?.line_items ?? []}
+          initialContingencies={apiJob?.quote?.contingencies ?? []}
           onClose={() => setShowQuoteEditor(false)}
           onSave={handleQuoteSave}
         />

@@ -7,10 +7,16 @@ import { formatNGN } from '@/lib/currency';
 
 interface QuoteEditorProps {
   onClose: () => void;
-  onSave: (total: number) => void;
+  onSave: (payload: {
+    line_items: LineItem[];
+    contingencies: Contingency[];
+    subtotal: number;
+    total: number;
+  }) => void | Promise<void>;
   clientName?: string;
   eventName?: string;
   initialItems?: LineItem[];
+  initialContingencies?: Contingency[];
 }
 
 // Default mock data using canonical LineItem/Contingency fields
@@ -28,9 +34,9 @@ const defaultContingencies: Contingency[] = [
 
 let nextId = 100;
 
-export default function QuoteEditor({ onClose, onSave, clientName = 'Adaeze Okonkwo', eventName = 'Wedding Decoration', initialItems }: QuoteEditorProps) {
-  const [lineItems, setLineItems] = useState<LineItem[]>(initialItems || defaultItems);
-  const [contingencies, setContingencies] = useState<Contingency[]>(defaultContingencies);
+export default function QuoteEditor({ onClose, onSave, clientName = 'Adaeze Okonkwo', eventName = 'Wedding Decoration', initialItems, initialContingencies }: QuoteEditorProps) {
+  const [lineItems, setLineItems] = useState<LineItem[]>(initialItems ?? defaultItems);
+  const [contingencies, setContingencies] = useState<Contingency[]>(initialContingencies ?? defaultContingencies);
 
   // All monetary values remain numeric; format only at render time
   const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
@@ -300,7 +306,7 @@ export default function QuoteEditor({ onClose, onSave, clientName = 'Adaeze Okon
             Cancel
           </button>
           <button
-            onClick={() => onSave(total)}
+            onClick={() => onSave({ line_items: lineItems, contingencies, subtotal, total })}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#19D66B] text-white text-[13px] font-bold rounded-xl hover:bg-[#079A4F] transition-colors"
             style={{ boxShadow: '0 0 0 1px rgba(25,214,107,0.2), 0 4px 24px rgba(25,214,107,0.15)' }}
           >

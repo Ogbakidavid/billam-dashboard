@@ -6,18 +6,25 @@
 
 // ── Job State ──────────────────────────────────────────────────────────────────
 export type JobState =
-  | 'IDLE' |'INGESTING' |'REASONING' |'CLARIFYING' |'NEEDS_SME_INPUT' |'AWAITING_HUMAN_APPROVAL' |'EXECUTED' |'FAILED_RETRY';
+  | 'IDLE'
+  | 'INGESTING'
+  | 'REASONING'
+  | 'CLARIFYING'
+  | 'NEEDS_SME_INPUT'
+  | 'AWAITING_HUMAN_APPROVAL'
+  | 'EXECUTED'
+  | 'FAILED_RETRY';
 
 /** Map canonical JobState → human-readable UI label */
 export const JOB_STATE_LABELS: Record<JobState, string> = {
-  IDLE:                     'Idle',
-  INGESTING:                'Ingesting',
-  REASONING:                'In Progress',
-  CLARIFYING:               'Clarifying',
-  NEEDS_SME_INPUT:          'Needs your input',
-  AWAITING_HUMAN_APPROVAL:  'Awaiting approval',
-  EXECUTED:                 'Executed',
-  FAILED_RETRY:             'Failed / Retry',
+  IDLE: 'Idle',
+  INGESTING: 'Ingesting',
+  REASONING: 'In Progress',
+  CLARIFYING: 'Clarifying',
+  NEEDS_SME_INPUT: 'Needs your input',
+  AWAITING_HUMAN_APPROVAL: 'Awaiting approval',
+  EXECUTED: 'Executed',
+  FAILED_RETRY: 'Failed / Retry',
 };
 
 // ── Quote Status ───────────────────────────────────────────────────────────────
@@ -25,8 +32,7 @@ export type QuoteStatus = 'draft' | 'awaiting_approval' | 'sent' | 'expired';
 
 // ── Business Type ──────────────────────────────────────────────────────────────
 export type BusinessType =
-  | 'event_vendor'
-  | 'caterer' |'tailor' |'photographer' |'event_planner' |'equipment_rental';
+  'event_vendor' | 'caterer' | 'tailor' | 'photographer' | 'event_planner' | 'equipment_rental';
 
 // ── Message ────────────────────────────────────────────────────────────────────
 export type MessageSender = 'client' | 'agent' | 'sme' | 'system';
@@ -35,6 +41,8 @@ export interface Message {
   id: string;
   sender: MessageSender;
   text: string;
+  messageType?: 'TEXT' | 'CLARIFICATION' | 'QUOTE' | string;
+  quote?: Quote;
   /** ISO 8601 timestamp string, e.g. "2026-09-01T10:02:00Z" */
   timestamp: string;
 }
@@ -69,6 +77,10 @@ export interface Quote {
   /** Numeric NGN — format only at render time */
   total: number;
   status: QuoteStatus;
+  currency?: string;
+  validity_days?: number;
+  payment_terms?: string;
+  assumptions?: string[];
   created_at: string;
   updated_at: string;
 }

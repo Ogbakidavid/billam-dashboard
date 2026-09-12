@@ -6,6 +6,7 @@ import { Message, AuditEvent } from '@/app/dashboard/types';
 import { formatTime } from '@/lib/currency';
 
 import { getJob, postMessage } from '@/lib/api';
+import ClientQuoteCard from '@/app/dashboard/components/ClientQuoteCard';
 
 interface ChatPanelProps {
   jobId: string;
@@ -28,6 +29,26 @@ export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
             id: m.message_id || Date.now().toString(),
             sender: m.sender as 'client' | 'agent' | 'sme',
             text: m.text,
+            messageType: m.message_type,
+            quote:
+              m.message_type === 'QUOTE' && apiJob.quote
+                ? {
+                    id: apiJob.quote.id,
+                    job_id: apiJob.quote.job_id,
+                    line_items: apiJob.quote.line_items,
+                    contingencies: apiJob.quote.contingencies,
+                    subtotal: apiJob.quote.subtotal,
+                    total: apiJob.quote.total,
+                    status:
+                      apiJob.quote.status.toLowerCase() === 'sent' ? 'sent' : 'awaiting_approval',
+                    currency: apiJob.quote.currency ?? 'NGN',
+                    validity_days: apiJob.quote.validity_days,
+                    payment_terms: apiJob.quote.payment_terms,
+                    assumptions: apiJob.quote.assumptions,
+                    created_at: apiJob.quote.created_at,
+                    updated_at: apiJob.quote.updated_at,
+                  }
+                : undefined,
             timestamp: m.created_at,
           }));
           setMessages(mappedMessages);
@@ -78,7 +99,10 @@ export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   };
 
   return (
@@ -108,9 +132,10 @@ export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#F0F0EE' }}>
         {messages.map((msg) => {
           const isClient = msg.sender === 'client';
-          const isAgent  = msg.sender === 'agent';
-          const isSme    = msg.sender === 'sme';
+          const isAgent = msg.sender === 'agent';
+          const isSme = msg.sender === 'sme';
           const isSystem = msg.sender === 'system';
+          const isQuote = msg.messageType === 'QUOTE' && msg.quote;
 
           // Client → LEFT; Agent/SME/System → RIGHT
           const alignRight = isAgent || isSme || isSystem;
@@ -124,10 +149,14 @@ export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
                 </div>
               )}
 
-              <div className={`max-w-[78%] flex flex-col gap-1 ${alignRight ? 'items-end' : 'items-start'}`}>
+              <div
+                className={`${isQuote ? 'w-[min(100%,620px)]' : 'max-w-[78%]'} flex flex-col gap-1 ${alignRight ? 'items-end' : 'items-start'}`}
+              >
                 {/* Sender label */}
                 {isAgent && (
-                  <span className="text-[10px] font-semibold text-[#079A4F] px-1">BillAm Agent</span>
+                  <span className="text-[10px] font-semibold text-[#079A4F] px-1">
+                    BillAm Agent
+                  </span>
                 )}
                 {isSme && (
                   <span className="text-[10px] font-semibold text-amber-600 px-1">You (SME)</span>
@@ -136,28 +165,38 @@ export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
                   <span className="text-[10px] font-semibold text-blue-500 px-1">Client</span>
                 )}
 
-                <div
-                  className={`px-3 py-2 rounded-2xl text-[13px] leading-relaxed chat-bubble-in ${
-                    isClient
-                      ? 'bg-white text-[#171817] rounded-bl-sm'
-                      : isSme
-                      ? 'bg-amber-50 text-[#171817] rounded-br-sm border border-amber-200'
-                      : isAgent
-                      ? 'bg-[#DDFBEA] text-[#171817] rounded-br-sm'
-                      : 'bg-[#F0F0EE] text-[#6F716E] rounded-br-sm text-[12px] italic'
-                  }`}
-                  style={isClient ? { boxShadow: '0 1px 3px rgba(20,25,20,0.06)' } : {}}
-                >
-                  {msg.text}
-                </div>
-                <span className="text-[11px] text-[#999C98] px-1" suppressHydrationWarning>{formatTime(msg.timestamp)}</span>
+                {isQuote ? (
+                  <ClientQuoteCard quote={msg.quote!} intro={msg.text} />
+                ) : (
+                  <div
+                    className={`px-3 py-2 rounded-2xl text-[13px] leading-relaxed chat-bubble-in ${
+                      isClient
+                        ? 'bg-white text-[#171817] rounded-bl-sm'
+                        : isSme
+                          ? 'bg-amber-50 text-[#171817] rounded-br-sm border border-amber-200'
+                          : isAgent
+                            ? 'bg-[#DDFBEA] text-[#171817] rounded-br-sm'
+                            : 'bg-[#F0F0EE] text-[#6F716E] rounded-br-sm text-[12px] italic'
+                    }`}
+                    style={isClient ? { boxShadow: '0 1px 3px rgba(20,25,20,0.06)' } : {}}
+                  >
+                    {msg.text}
+                  </div>
+                )}
+                <span className="text-[11px] text-[#999C98] px-1" suppressHydrationWarning>
+                  {formatTime(msg.timestamp)}
+                </span>
               </div>
 
               {/* Avatar for agent/sme (right side) */}
               {isAgent && (
                 <div className="w-6 h-6 rounded-full bg-[#19D66B] flex items-center justify-center ml-2 mt-auto mb-1 shrink-0">
                   <svg width="12" height="12" viewBox="0 0 22 22" fill="none">
-                    <path d="M3 4C3 2.9 3.9 2 5 2H17C18.1 2 19 2.9 19 4V13C19 14.1 18.1 15 17 15H12L8 19V15H5C3.9 15 3 14.1 3 13V4Z" fill="white" fillOpacity="0.9"/>
+                    <path
+                      d="M3 4C3 2.9 3.9 2 5 2H17C18.1 2 19 2.9 19 4V13C19 14.1 18.1 15 17 15H12L8 19V15H5C3.9 15 3 14.1 3 13V4Z"
+                      fill="white"
+                      fillOpacity="0.9"
+                    />
                   </svg>
                 </div>
               )}
@@ -196,7 +235,9 @@ export default function ChatPanel({ jobId, onSmeMessage }: ChatPanelProps) {
             <Icon name="PaperAirplaneIcon" size={14} />
           </button>
         </div>
-        <p className="text-[10px] text-[#999C98] mt-1.5 px-1">Messages sent here appear as SME in the conversation</p>
+        <p className="text-[10px] text-[#999C98] mt-1.5 px-1">
+          Messages sent here appear as SME in the conversation
+        </p>
       </div>
     </div>
   );
