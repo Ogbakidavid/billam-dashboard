@@ -30,6 +30,7 @@ Start the backend first, then run the dashboard:
 
 ```bash
 pnpm install
+cp .env.example .env.local
 pnpm dev
 ```
 
