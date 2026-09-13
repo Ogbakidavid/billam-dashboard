@@ -29,8 +29,8 @@ Generated jobs receive a random client name and phone number when the backend re
 Start the backend first, then run the dashboard:
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Open [http://localhost:4028](http://localhost:4028).
@@ -40,6 +40,8 @@ To use another backend URL, set it in `.env.local`:
 ```text
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
+
+Create `.env.local` only when the backend is not running at the default URL. Never put Anthropic or other backend secrets in this repository; API credentials belong in the backend `.env` file.
 
 ## Useful routes
 
@@ -52,9 +54,21 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 ## Checks
 
 ```bash
-npm run type-check
-npm run build
+pnpm type-check
+pnpm build
 ```
+
+The frontend does not contain a separate Jest suite. Its verification path is TypeScript checking plus a production build. For the end-to-end workflow, run the backend tests from the backend repository and then use the dashboard chat simulator against the running backend:
+
+```bash
+# terminal 1: backend repository
+pnpm dev
+
+# terminal 2: this repository
+pnpm dev
+```
+
+Open `/dashboard/chat`, submit a client request, and verify that the job appears in the overview, jobs, and quotes views without a manual refresh. Follow [`testing.md`](./testing.md) for the scenario checklist.
 
 The production build may require network access if Next.js needs to download remote fonts. Type checking does not require that network request.
 
