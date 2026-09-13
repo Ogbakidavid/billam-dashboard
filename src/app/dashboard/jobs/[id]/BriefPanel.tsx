@@ -49,21 +49,26 @@ interface BriefPanelProps {
   extracted_fields?: BriefFieldEntry[];
   missing_fields?: string[];
   audit_events?: AuditEvent[];
+  onResolve?: () => void;
 }
 
 export default function BriefPanel({
   extracted_fields = defaultExtractedFields,
   missing_fields = defaultMissingFields,
   audit_events = defaultAuditEvents,
+  onResolve,
 }: BriefPanelProps) {
   // Combine extracted fields with missing fields for display
   // Some fields (like a partial date) can be BOTH present in extracted_fields
   // AND still listed in missing_fields, since they have a value but it's
   // genuinely incomplete. Don't duplicate those — skip any missing_fields
   // key that already has a real entry from extracted_fields.
+  const missingKeys = new Set(missing_fields);
   const extractedKeys = new Set(extracted_fields.map((f) => f.key));
   const allFields: BriefFieldEntry[] = [
-    ...extracted_fields,
+    ...extracted_fields.map((field) => missingKeys.has(field.key)
+      ? { ...field, status: 'missing' as const, value: field.value || 'Missing' }
+      : field),
     ...missing_fields
       .filter((key) => !extractedKeys.has(key))
       .map((key) => ({
@@ -94,7 +99,7 @@ export default function BriefPanel({
               </li>
             ))}
           </ul>
-          <button className="text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors flex items-center gap-1">
+          <button onClick={onResolve} className="text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors flex items-center gap-1">
             Resolve missing details <Icon name="ArrowRightIcon" size={11} />
           </button>
         </div>

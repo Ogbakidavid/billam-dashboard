@@ -10,19 +10,28 @@ interface ResolveModalProps {
   client: string;
   job: string;
   missingInfo?: string;
+  missingFields?: string[];
   onClose: () => void;
-  onResolved: () => void;
+  onResolved: (suppliedFields: Record<string, string>, note: string) => void | Promise<void>;
 }
 
-export function ResolveModal({ client, job, missingInfo = 'Missing venue floor plan', onClose, onResolved }: ResolveModalProps) {
+export function ResolveModal({ client, job, missingInfo, missingFields = [], onClose, onResolved }: ResolveModalProps) {
   const [note, setNote] = useState('');
   const [resolved, setResolved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [values, setValues] = useState<Record<string, string>>({});
 
-  const handleResolve = () => {
-    setResolved(true);
-    setTimeout(() => {
-      onResolved();
-    }, 1200);
+  const fields = missingFields.length > 0 ? missingFields : (missingInfo ? [missingInfo] : []);
+  const labelFor = (field: string) => field.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
+  const handleResolve = async () => {
+    setSaving(true);
+    try {
+      await onResolved(values, note);
+      setResolved(true);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -50,10 +59,25 @@ export function ResolveModal({ client, job, missingInfo = 'Missing venue floor p
 
             <div className="bg-amber-50 border border-amber-200 rounded-[14px] px-4 py-3 mb-4">
               <p className="text-[12px] font-semibold text-amber-700">Needs your input</p>
-              <p className="text-[13px] text-amber-800 mt-0.5">{missingInfo}</p>
+              <p className="text-[13px] text-amber-800 mt-0.5">
+                {fields.length > 0 ? fields.map(labelFor).join(', ') : 'Additional information is required'}
+              </p>
             </div>
 
             <div className="mb-4">
+              {fields.map((field) => (
+                <div key={field} className="mb-3">
+                  <label className="block text-[11px] font-semibold text-[#6F716E] uppercase tracking-wider mb-1.5">
+                    {labelFor(field)}
+                  </label>
+                  <input
+                    className="w-full px-3 py-2.5 bg-[#FAFAF9] border border-[#E7E7E3] rounded-xl text-[13px] text-[#171817] outline-hidden focus:border-[#19D66B] focus:ring-2 focus:ring-[#19D66B]/15 placeholder:text-[#999C98]"
+                    value={values[field] ?? ''}
+                    onChange={(event) => setValues((current) => ({ ...current, [field]: event.target.value }))}
+                    placeholder={`Enter ${labelFor(field).toLowerCase()}`}
+                  />
+                </div>
+              ))}
               <label className="block text-[11px] font-semibold text-[#6F716E] uppercase tracking-wider mb-1.5">Resolution Note</label>
               <textarea
                 className="w-full px-3 py-2.5 bg-[#FAFAF9] border border-[#E7E7E3] rounded-xl text-[13px] text-[#171817] outline-hidden focus:border-[#19D66B] focus:ring-2 focus:ring-[#19D66B]/15 resize-none placeholder:text-[#999C98]"
@@ -70,10 +94,11 @@ export function ResolveModal({ client, job, missingInfo = 'Missing venue floor p
               </button>
               <button
                 onClick={handleResolve}
-                className="flex-1 px-4 py-2.5 bg-amber-500 text-white text-[13px] font-bold rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2"
+                disabled={saving}
+                className="flex-1 px-4 py-2.5 bg-amber-500 text-white text-[13px] font-bold rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 <Icon name="CheckCircleIcon" size={14} />
-                Mark Resolved
+                {saving ? 'Saving…' : 'Mark Resolved'}
               </button>
             </div>
           </>

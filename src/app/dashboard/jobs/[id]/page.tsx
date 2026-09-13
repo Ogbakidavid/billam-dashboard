@@ -14,7 +14,7 @@ import JobEditor from '@/app/dashboard/components/JobEditor';
 import { ResolveModal, ReviewIssueModal } from '@/app/dashboard/components/WorkflowModals';
 import { JobState, AuditEvent, Contingency, LineItem } from '@/app/dashboard/types';
 import { formatTime } from '@/lib/currency';
-import { approveQuote, editQuote, getJob, ApiJob } from '@/lib/api';
+import { approveQuote, editQuote, getJob, submitManualInput, ApiJob } from '@/lib/api';
 
 type TabType = 'chat' | 'brief' | 'quote' | 'activity' | 'notes' | 'files';
 
@@ -79,12 +79,30 @@ export default function JobDetailPage() {
   };
 
   const allActivity = [...(apiJob?.audit_events as AuditEvent[] || []), ...extraActivity];
+  const missingFields = apiJob?.missing_required_fields ?? [];
   const briefFields = Object.entries(fields).map(([key, value]) => ({
     key,
     label: key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()),
     value: String(value),
-    status: 'confirmed' as const,
+    status: missingFields.includes(key) ? 'missing' as const : 'confirmed' as const,
   }));
+
+  const handleResolve = async (suppliedFields: Record<string, string>, note: string) => {
+    if (!id) return;
+    const nonEmptyFields = Object.fromEntries(
+      Object.entries(suppliedFields).filter(([, value]) => value.trim().length > 0),
+    );
+    if (Object.keys(nonEmptyFields).length === 0) {
+      throw new Error('Provide at least one missing field before resolving this job.');
+    }
+    const updatedJob = await submitManualInput(id, {
+      supplied_fields: nonEmptyFields,
+      source: note.trim() || 'SME dashboard resolution',
+    });
+    setApiJob(updatedJob);
+    setResolved(false);
+    setShowResolve(false);
+  };
 
   const handleApprove = async () => {
     setShowApproval(false);
@@ -242,7 +260,7 @@ export default function JobDetailPage() {
           <ChatPanel jobId={id} onSmeMessage={handleSmeMessage} />
         </div>
         <div className="overflow-y-auto max-h-[520px] pr-1">
-          <BriefPanel extracted_fields={briefFields} missing_fields={apiJob?.missing_required_fields ?? []} audit_events={allActivity} />
+          <BriefPanel extracted_fields={briefFields} missing_fields={missingFields} audit_events={allActivity} onResolve={() => setShowResolve(true)} />
         </div>
       </div>
 
@@ -273,7 +291,7 @@ export default function JobDetailPage() {
           </div>
         )}
         {activeTab === 'brief' && (
-          <BriefPanel extracted_fields={briefFields} missing_fields={apiJob?.missing_required_fields ?? []} audit_events={allActivity} />
+          <BriefPanel extracted_fields={briefFields} missing_fields={missingFields} audit_events={allActivity} onResolve={() => setShowResolve(true)} />
         )}
         {activeTab === 'quote' && (
           apiJob?.quote ? (
@@ -456,8 +474,9 @@ export default function JobDetailPage() {
         <ResolveModal
           client={displayClient}
           job={displayJob}
+          missingFields={missingFields}
           onClose={() => setShowResolve(false)}
-          onResolved={() => { setResolved(true); setShowResolve(false); }}
+          onResolved={handleResolve}
         />
       )}
       {showReviewIssue && (
