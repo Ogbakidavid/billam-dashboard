@@ -31,7 +31,7 @@ function JobsContent() {
   const [apiJobsList, setApiJobsList] = useState<any[] | null>(null);
 
   useEffect(() => {
-    getJobs(`biz-${currentPersona.key.replace(/_/g, '-')}`)
+    const refreshJobs = () => getJobs(`biz-${currentPersona.key.replace(/_/g, '-')}`)
       .then((res) => {
         if (res && res.jobs) {
           const mapped = res.jobs.map((j: ApiJob) => ({
@@ -50,6 +50,16 @@ function JobsContent() {
         }
       })
       .catch(() => setApiJobsList([]));
+
+    const handleJobsUpdated = () => { void refreshJobs(); };
+    window.addEventListener('billam:jobs-updated', handleJobsUpdated);
+    const refreshTimer = window.setInterval(handleJobsUpdated, 5000);
+    void refreshJobs();
+
+    return () => {
+      window.removeEventListener('billam:jobs-updated', handleJobsUpdated);
+      window.clearInterval(refreshTimer);
+    };
   }, [currentPersona.key]);
 
   useEffect(() => {

@@ -5,6 +5,12 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+export function notifyJobsUpdated(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('billam:jobs-updated'));
+  }
+}
+
 export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   const response = await fetch(url, {
@@ -102,10 +108,12 @@ export async function createJob(payload: {
   business_id: string;
   business_type: string;
 }): Promise<ApiJob> {
-  return fetchApi<ApiJob>('/jobs', {
+  const job = await fetchApi<ApiJob>('/jobs', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  notifyJobsUpdated();
+  return job;
 }
 
 /** Append client or SME message to a job */
@@ -113,7 +121,7 @@ export async function postMessage(
   jobId: string,
   payload: { text: string; sender?: 'client' | 'sme' }
 ): Promise<ApiJob> {
-  return fetchApi<ApiJob>(`/jobs/${jobId}/messages`, {
+  const job = await fetchApi<ApiJob>(`/jobs/${jobId}/messages`, {
     method: 'POST',
     body: JSON.stringify({
       message_text: payload.text,
@@ -121,6 +129,8 @@ export async function postMessage(
       sender: payload.sender ?? 'client',
     }),
   });
+  notifyJobsUpdated();
+  return job;
 }
 
 /** Edit quote line items / contingencies */
@@ -137,21 +147,25 @@ export async function editQuote(
     contingencies?: Array<{ id: string; label: string; rate: number | null; amount: number }>;
   }
 ): Promise<{ job_id: string; state: string; quote: { status: string; total: number } }> {
-  return fetchApi<{ job_id: string; state: string; quote: { status: string; total: number } }>(
+  const result = await fetchApi<{ job_id: string; state: string; quote: { status: string; total: number } }>(
     `/jobs/${jobId}/quote`,
     {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }
   );
+  notifyJobsUpdated();
+  return result;
 }
 
 /** Approve quote */
 export async function approveQuote(jobId: string): Promise<ApprovalResult> {
-  return fetchApi<ApprovalResult>(`/jobs/${jobId}/approve_quote`, {
+  const result = await fetchApi<ApprovalResult>(`/jobs/${jobId}/approve_quote`, {
     method: 'POST',
     body: JSON.stringify({ approved_by: 'dashboard_sme' }),
   });
+  notifyJobsUpdated();
+  return result;
 }
 
 /** Submit manual SME input for missing fields */
@@ -159,22 +173,26 @@ export async function submitManualInput(
   jobId: string,
   payload: { supplied_fields: Record<string, any>; source?: string }
 ): Promise<ApiJob> {
-  return fetchApi<ApiJob>(`/jobs/${jobId}/manual_input`, {
+  const job = await fetchApi<ApiJob>(`/jobs/${jobId}/manual_input`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  notifyJobsUpdated();
+  return job;
 }
 
 /** Retry failed job */
 export async function retryJob(
   jobId: string
 ): Promise<{ job_id: string; state: string; retry_started: boolean }> {
-  return fetchApi<{ job_id: string; state: string; retry_started: boolean }>(
+  const result = await fetchApi<{ job_id: string; state: string; retry_started: boolean }>(
     `/jobs/${jobId}/retry`,
     {
       method: 'POST',
     }
   );
+  notifyJobsUpdated();
+  return result;
 }
 
 // ==========================================

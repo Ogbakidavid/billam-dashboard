@@ -31,7 +31,7 @@ export default function QuotesPage() {
 
   useEffect(() => {
     const businessId = `biz-${currentPersona.key.replace(/_/g, '-')}`;
-    getJobs(businessId).then(({ jobs }) => {
+    const refreshQuotes = () => getJobs(businessId).then(({ jobs }) => {
       const jobIds: Record<string, string> = {};
       const quotes = jobs.filter((job: ApiJob) => job.quote).map((job: ApiJob) => {
         const quote = job.quote!;
@@ -49,6 +49,16 @@ export default function QuotesPage() {
       setQuoteJobIds(jobIds);
       setApiQuotes(quotes.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()));
     }).catch(() => setApiQuotes([]));
+
+    const handleJobsUpdated = () => { void refreshQuotes(); };
+    window.addEventListener('billam:jobs-updated', handleJobsUpdated);
+    const refreshTimer = window.setInterval(handleJobsUpdated, 5000);
+    void refreshQuotes();
+
+    return () => {
+      window.removeEventListener('billam:jobs-updated', handleJobsUpdated);
+      window.clearInterval(refreshTimer);
+    };
   }, [currentPersona.key]);
 
   const quotes = apiQuotes ?? [];

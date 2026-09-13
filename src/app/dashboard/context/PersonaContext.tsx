@@ -474,7 +474,17 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    hydratePersona();
+    const handleJobsUpdated = () => {
+      void hydratePersona();
+    };
+    window.addEventListener('billam:jobs-updated', handleJobsUpdated);
+    const refreshTimer = window.setInterval(handleJobsUpdated, 5000);
+    void hydratePersona();
+
+    return () => {
+      window.removeEventListener('billam:jobs-updated', handleJobsUpdated);
+      window.clearInterval(refreshTimer);
+    };
   }, [currentKey]);
 
   return (
