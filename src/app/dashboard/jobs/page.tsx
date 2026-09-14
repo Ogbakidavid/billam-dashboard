@@ -23,6 +23,12 @@ const filters = [
 
 const activeStates: JobState[] = ['REASONING', 'CLARIFYING', 'NEEDS_SME_INPUT', 'AWAITING_HUMAN_APPROVAL'];
 
+function formatEventType(value: string): string {
+  return value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
 function JobsContent() {
   const { currentPersona } = usePersona();
   const searchParams = useSearchParams();
@@ -38,7 +44,9 @@ function JobsContent() {
             id: j.job_id,
             client: j.extracted_fields?.client_name || 'Unknown client',
             phone: j.extracted_fields?.client_phone || 'No phone recorded',
-            job: j.extracted_fields?.event_type || j.business_type,
+            job: j.extracted_fields?.event_type
+              ? formatEventType(j.extracted_fields.event_type)
+              : j.business_type,
             service: j.business_type,
             state: j.state as JobState,
             amount: j.quote ? j.quote.total : 0,
