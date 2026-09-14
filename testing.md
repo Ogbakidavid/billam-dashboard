@@ -14,11 +14,14 @@ brief, clarification, an ambiguous-budget case, and an infeasible request.
 - Jobs persist in `BillAm-agent/.jobs-store.json`. Reset starts a new simulator
   thread but does not delete historic jobs. Delete that file only when you
   intentionally want a clean local store while the backend is stopped.
-- Each new job receives a generated display client name. The event type is the
-  job title, never the client name.
-- Quotes are stored as drafts. The client receives an acknowledgement that the
-  quote is awaiting owner review; the itemised quote is sent only after an SME
-  approves it on the Job Detail page.
+- Each new simulator job uses the client persona selected in the dropdown. The
+  selected name is persisted on the job and is used throughout the chat, Jobs
+  list, and Job Detail page.
+- The event type comes from the validated `event_type` field. Values such as
+  `baby_shower` are displayed as readable labels such as “Baby Shower”.
+- Quotes are stored as drafts. The client receives a team-oriented
+  acknowledgement while we finalize the quote; the itemised quote is sent only
+  after an SME approves it on the Job Detail page.
 
 ## Before You Start
 
@@ -40,9 +43,9 @@ brief, clarification, an ambiguous-budget case, and an infeasible request.
 
 3. Open `http://localhost:4028/dashboard/chat`.
 
-4. Before each scenario, click **Reset**, then send the scenario's first
-   message. Use the generated job ID shown in the simulator to locate the same
-   record under **Jobs**.
+4. Before each scenario, click **Reset**, select the client persona you want to
+   simulate, then send the scenario's first message. Use the job ID shown in
+   the simulator to locate the same record under **Jobs**.
 
 ## What Is Deterministic vs Model-Led
 
@@ -65,11 +68,12 @@ Send:
 Expected result:
 
 - The simulator replaces its optimistic message with the server transcript.
-- The agent posts an acknowledgement saying the quote is being reviewed by the
-  business owner. Exact phrasing can vary, but it must not claim the quote was
-  already sent.
+- The agent posts a team-oriented acknowledgement such as “Our team is putting
+  your quote together now and will get back to you shortly.” Exact phrasing can
+  vary, but it must not mention the business owner, internal approval, or claim
+  that the quote was already sent.
 - The job reaches `AWAITING_HUMAN_APPROVAL`.
-- The Job Detail page for that job ID shows the generated client name, wedding
+- The Job Detail page for that job ID shows the selected client persona, wedding
   title, extracted brief, quote line items, contingencies, and non-zero total.
 - Approving the quote appends the draft quote message to the same transcript
   and transitions the job to `EXECUTED`.
@@ -82,9 +86,10 @@ Send:
 
 Expected result:
 
-- The job reaches `CLARIFYING` when the agent can extract the supplied details
-  but still requires a guest count.
-- `missing_required_fields` includes `guest_count`.
+- The job reaches `CLARIFYING` while the agent still needs a guest count and a
+  specific event date. The baby-shower event type should remain `baby_shower`.
+- `missing_required_fields` reflects the unresolved prerequisites, normally
+  including `guest_count` and `event_date` for this message.
 - The transcript includes an agent clarification. It should ask naturally for
   the missing information—not show JSON, field keys, or a numbered form.
 - Send a follow-up with a guest count. The agent should merge it with the
@@ -128,7 +133,7 @@ Create a fresh job:
 ```bash
 curl -X POST http://localhost:3001/jobs \
   -H "Content-Type: application/json" \
-  -d '{"business_id":"biz-event-decoration","business_type":"event_vendor"}'
+  -d '{"business_id":"biz-event-decoration","business_type":"event_vendor","client_name":"Sarah Adeyemi"}'
 ```
 
 Send one scenario message, substituting the returned ID:
