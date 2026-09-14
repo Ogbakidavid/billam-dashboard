@@ -15,9 +15,6 @@ interface ClientPersona {
   name: string;
   avatar: string;
   avatarColor: string;
-  role: string;
-  description: string;
-  service: string;
 }
 
 const CLIENT_PERSONAS: ClientPersona[] = [
@@ -26,36 +23,48 @@ const CLIENT_PERSONAS: ClientPersona[] = [
     name: 'Sarah Adeyemi',
     avatar: 'SA',
     avatarColor: '#7C3AED',
-    role: 'Bride-to-be',
-    description: 'Detail-oriented, knows exactly what she wants.',
-    service: 'Wedding Decoration',
   },
   {
     id: 'emeka',
     name: 'Emeka Okafor',
     avatar: 'EO',
     avatarColor: '#0891B2',
-    role: 'Corporate Events Manager',
-    description: 'Busy professional, gives minimal info upfront.',
-    service: 'Corporate Event Decoration',
   },
   {
     id: 'funke',
     name: 'Funke Balogun',
     avatar: 'FB',
     avatarColor: '#D97706',
-    role: 'High-Budget Client',
-    description: 'Wants something extraordinary, budget is flexible.',
-    service: 'Traditional Ceremony Decor',
   },
   {
     id: 'chidi',
     name: 'Chidi Nwosu',
     avatar: 'CN',
     avatarColor: '#DC2626',
-    role: 'Last-Minute Requester',
-    description: 'Urgent timeline, needs immediate availability.',
-    service: 'Outdoor Event Decoration',
+  },
+  {
+    id: 'adaeze',
+    name: 'Adaeze Okonkwo',
+    avatar: 'AO',
+    avatarColor: '#DB2777',
+  },
+  {
+    id: 'kunle',
+    name: 'Kunle Adebayo',
+    avatar: 'KA',
+    avatarColor: '#2563EB',
+  },
+  {
+    id: 'ngozi',
+    name: 'Ngozi Okafor',
+    avatar: 'NO',
+    avatarColor: '#059669',
+  },
+  {
+    id: 'yemi',
+    name: 'Yemi Balogun',
+    avatar: 'YB',
+    avatarColor: '#9333EA',
   },
 ];
 
@@ -104,7 +113,14 @@ export default function ChatSimulatorPage() {
     setJobId(storedJobId);
     getJobById(storedJobId)
       .then((job) => {
-        if (job) setMessages(extractMessages(job));
+        if (job) {
+          setMessages(extractMessages(job));
+          const persistedClientName = job.extracted_fields?.client_name;
+          const persistedPersona = CLIENT_PERSONAS.find(
+            (persona) => persona.name === persistedClientName,
+          );
+          if (persistedPersona) setSelectedPersonaId(persistedPersona.id);
+        }
       })
       .catch(() => {
         // The backend may have been restarted/reseeded since this browser
@@ -220,7 +236,11 @@ export default function ChatSimulatorPage() {
 
       // 1. If no job exists yet, create it silently
       if (!activeJobId) {
-        const job = await createJob({ business_id: businessId, business_type: businessType });
+        const job = await createJob({
+          business_id: businessId,
+          business_type: businessType,
+          client_name: selectedPersona.name,
+        });
         activeJobId = job.job_id;
         setJobId(activeJobId);
         localStorage.setItem('billam_active_job_id', activeJobId);
@@ -335,9 +355,6 @@ export default function ChatSimulatorPage() {
                               />
                             )}
                           </div>
-                          <p className="text-[11px] text-[#999C98] mt-0.5 truncate">
-                            {persona.role} · {persona.description}
-                          </p>
                         </div>
                       </div>
                     </button>
@@ -377,18 +394,6 @@ export default function ChatSimulatorPage() {
             </p>
             <p className="text-[13px] font-semibold text-[#171817]">{selectedPersona.name}</p>
           </div>
-        </div>
-        <div className="w-px h-8 bg-[#E7E7E3] hidden sm:block" />
-        <div>
-          <p className="text-[10px] font-semibold text-[#999C98] uppercase tracking-wider">Role</p>
-          <p className="text-[13px] font-semibold text-[#171817]">{selectedPersona.role}</p>
-        </div>
-        <div className="w-px h-8 bg-[#E7E7E3] hidden sm:block" />
-        <div>
-          <p className="text-[10px] font-semibold text-[#999C98] uppercase tracking-wider">
-            Business
-          </p>
-          <p className="text-[13px] font-semibold text-[#171817]">{currentPersona.label}</p>
         </div>
         {jobId && (
           <>
@@ -588,7 +593,6 @@ export default function ChatSimulatorPage() {
             <span className="font-semibold" style={{ color: selectedPersona.avatarColor }}>
               {selectedPersona.name}
             </span>{' '}
-            · {selectedPersona.role}
             {jobId && (
               <span className="ml-1">
                 · Job <span className="font-mono text-[#079A4F]">{jobId.slice(0, 8)}…</span>

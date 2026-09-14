@@ -107,6 +107,7 @@ export interface ApprovalResult {
 export async function createJob(payload: {
   business_id: string;
   business_type: string;
+  client_name: string;
 }): Promise<ApiJob> {
   const job = await fetchApi<ApiJob>('/jobs', {
     method: 'POST',
